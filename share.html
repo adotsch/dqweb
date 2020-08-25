@@ -1,0 +1,48 @@
+<title>DQWEB SHARED CODE</title>
+<script type="text/javascript" src="jq/jquery-1.11.1.min.js"></script>
+<dialog>
+<center>
+<form>
+<h2>Someone has shared code with you!</h2>
+<label>Your DQWEB instance:</label><input type="text" size=40 id="instance"></input> <input type="button" value="ADD SHARED CODE!" onclick="go()"/></input>
+<br/>
+<label>Auto redirect:</label><input type="checkbox" id="redirect"/>
+</form>
+<h1 id="countdown"></h1>
+</center>
+</dialog>
+<script>
+var instance, redirect, timer;
+window.addEventListener('load',function(){
+	$("dialog")[0].showModal();
+	instance = localStorage.getItem("dqweb.instance")||"https://adotsch.github.io/dqweb/";
+	redirect = localStorage.getItem("dqweb.redirect")||"false";
+	$("#instance")[0].value = instance;
+	$("#redirect")[0].checked = JSON.parse(redirect);
+	$("#instance")[0].oninput = function(){
+		instance=$("#instance")[0].value;
+		localStorage.setItem("dqweb.instance",instance);
+		stopCounting();
+	};
+	$("#redirect")[0].onchange = function(){
+		redirect=$("#redirect")[0].checked;
+		localStorage.setItem("dqweb.redirect",""+redirect);
+		stopCounting();
+	};
+	if (redirect=="true"){
+		$("#countdown")[0].innerText="5";
+		timer = setInterval(function(){
+			var c = $("#countdown")[0];
+			c.innerText=""+(JSON.parse(c.innerText)-1);
+			if(c.innerText=="0" && redirect) go();
+		},1000);
+	}
+});
+function stopCounting() {
+	clearTimeout(timer);
+	$("#countdown")[0].innerText="";
+}
+function go(){
+	window.location = instance+window.location.hash;
+}
+</script>

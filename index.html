@@ -1,0 +1,455 @@
+﻿<head>
+<title>DQWEB v0.5</title>
+<link rel="stylesheet" href="cm/lib/codemirror.css"/>
+<link rel="stylesheet" href="cm/theme/eclipse.css"/>
+<script src="dqweb.settings.js"></script>
+<script src="cm/lib/codemirror.js"></script>
+<script src="cm/addon/edit/matchbrackets.js"></script>
+<script src="cm/addon/selection/active-line.js"></script>
+<script src="cm/addon/hint/show-hint.js"></script>
+<script src="cm/addon/search/search.js"></script>
+<script src="cm/addon/search/searchcursor.js"></script>
+<script src="cm/addon/dialog/dialog.js"></script>
+<script src="cm/mode/q/q.js"></script>
+<script type="text/javascript" src="jq/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="gl/js/goldenlayout.min.js"></script>
+<script type="text/javascript" src="lz/lz-string.js"></script>
+<script type="text/javascript" src="fs/FileSaver.js"></script>
+<link type="text/css" rel="stylesheet" href="gl/css/goldenlayout-base.css" />
+<link type="text/css" rel="stylesheet" href="gl/css/goldenlayout-light-theme.css" />
+<link type="text/css" rel="stylesheet" href="cm/addon/hint/show-hint.css"/>
+<link type="text/css" rel="stylesheet" href="cm/addon/dialog/dialog.css"/>
+<link rel="icon" href="favicon.ico"/>
+</head>
+<body>
+<div id="menubar" style="font-family: monospace; display:none; position: relative; overflow: hidden;">
+<span><b>DQWEB v0.5</b> |</span>
+<span><a id="new" alt="Drag&Drop" title="Drag and drop this to open new code editor" href="#">NEW</a> |</span>
+<span id="menuCL" style="display:none"><a id="closed" ondblclick="emptyTrash()" title="Drag and drop this to restore the last closed editor" href="#">TRASH</a> |</span>
+<span id="menuSH" style="display:none"><a id="shared" title="Drag and drop this to open shared code" href="#">SHARED</a> |</span>
+<span><a title="Import from JSON" href="#" onclick="document.getElementById('importSession').showModal()">IMPORT</a> |</span>
+<span><a title="Export from JSON" href="#" onclick="exportSession()">EXPORT</a> |</span>
+<span><a id="help" title="Drag and drop this to open help page" href="#">HELP</a></span>
+</div>
+<div id="layoutContainer" style="position:absolute; top: 30; left: 3; width: calc(100% - 9px); height: calc(100% - 34px)"></div>
+<div id="pleaseClose" style="display:none"><h3>Another instance of DQWEB is already open. Please close this tab/window!</h3></div>
+<div id="loaders" style="visibility: hidden; width:0px; height: 0px"></div>
+<div id="hidden" style="visibility: hidden; width:0px; height: 0px"></div>
+<dialog id="importSession"><input type="file" id="inputFile"/> <input type="button" value="Import All" onclick="importSession(1)"/> <input type="button" value="Import Code"  onclick="importSession(0)"/></dialog>
+<template id='helpText'>
+	<h2>Help</h2>
+	All your code and your layout are persisted in the browser's local storage.<br/>
+	You can always close this page, re-open and continue where you left off.
+	<h3>Drag & Drop</h3>
+	You can re-arrange your panels by drag & drop. 
+	You can also drag and drop items from the menu bar to create new panels.
+	<ul>
+		<li>NEW: create new kdb+/q code editor.</li>
+		<li>TRASH: restore (up tp <span id="trash_size">10</span>) closed code editors. Double-click to empty trash.</li>
+		<li>SHARE: open shared code.</li>
+		<li>HELP: open help page.</li>
+	</ul>
+	<h3>Code editor</h3>
+	<h4>//@SERVER [user@]host:port [comments]</h4>
+	Add this comment to set the target of execution. 
+	Everything after the address string is ignored, so you can add any comments there.<br/>
+	The setting only takes effect below the comment. 
+	You can work with multiple hosts in the same document by adding multiple //@SERVER comments.<br/>
+	The default server is <span id="default_server">...</span>.<br/>
+	Press Ctrl+Enter after "//@SERVER " to get hints collected from all the open editors with the longest comment. 
+	<h4>//@TITLE title</h4>Add this comment and execute (Ctrl+Enter) to set the title of your code editor.
+	<h4>//@WARN message</h4>Add this comment right above yout query to show a warning message before execution.
+	<h4>//@FILE filename [comments]</h4>Add this comment right above yout query to download the results into a file (like .csv,.xls etc...).
+	<h4>//@OUTPUT [name]</h4>Add this comment to set the target output window for the queries below the comment. 
+	<h4>//@URL url [comments]</h4>Add this comment and execute (Ctrl+Enter) to open url in the target output window.
+	<h4>Ctrl+Enter / Alt+Enter</h4>
+	Press Ctrl+Enter to execute current line or selected code and show results in Output. Works with multiple lines too.<br/>
+	If you host DQWEB from your targer q server (see start.q), you can press Alt+Enter to inline the results in comments below the executed code.
+	<h4>Ctrl+Space</h4>
+	Code completion for standard q keywords longer than 3 characters and the .Q namespace.
+	<h4>Ctrl+s</h4>
+	Copies a link to the clipboard that encodes the code editor's title and code and can be sent to others. The target DQWEB instance is <span id="share_url">...</span>.
+	<h3>Export</h3>Export all your code and layout to JSON.
+	<h3>Import</h3>Import (i.e. replace) your code and layout from JSON or keep everything and only import code (it will show up in SHARED).
+	<h3>Credits</h3>
+	You downloaded this from <a href="https://github.com/adotsch/dqweb" target="_blank">GitHub</a> for free, or you use it from <a href="https://adotsch.github.io/dqweb/index.html" target="_blank">github.io</a>. Use it at your own risk, I provide no support.
+	<ul>
+		<li><b>Internet people:</b> You can do amazing things with modern browsers in 200 lines of code. Thanks for that!</li>
+		<li><b>Coding & copy-pasting:</b> <a href="https://www.linkedin.com/in/dotsch/" target="_blank">András Dőtsch</a></li>
+		<li><b>JS libs:</b> <a href="http://golden-layout.com/" target="_blank">Golden Layout</a>, 
+		<a href="https://codemirror.net/" target="_blank">CodeMirror</a>, 
+		<a href="https://github.com/pieroxy/lz-string" target="_blank">LZ-String</a>,
+		<a href="https://github.com/eligrey/FileSaver.js" target="_blank">FileSaver</a></li>
+		<li><b>Q syntax mode:</b> <a href="https://github.com/codemirror/CodeMirror/commits?author=CharlieSkelton-Kx" target="_blank">Charles Skelton</a></li>
+	</ul>'
+</template>
+<style>dialog::backdrop {background: rgba(128,128,128,.75);-webkit-filter: blur(2px);-moz-filter: blur(2px);-o-filter: blur(2px);-ms-filter: blur(2px);filter: blur(2px);-webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);}</style>
+<script>
+var defaultLayout = {
+    settings: { hasHeaders: true, showPopoutIcon: false, showMaximiseIcon: true },
+    dimensions: { borderWidth: 2},
+    content: [{
+            type: 'column',
+            content: [{
+                    type: 'row', height: 65,
+                    content: [
+						{ type: 'component', componentName: 'code', componentState: { index: 1 } },
+						{ type: 'component', componentName: 'code', componentState: { index: 2, title:'Demo', code: dqweb.demo } },
+						{ type: 'component', componentName: 'help', title: 'Help', componentState: {} }
+                    ]
+                }, {
+                    type: 'component', height: 35, isClosable: false, 
+					componentName: 'output', title: "Output", componentState: {}
+                }
+            ]
+        }
+    ]
+};
+
+var maxIndex = 0;
+var savedLayout = JSON.parse(localStorage.getItem('dqweb.layout') || JSON.stringify(defaultLayout));
+savedLayout.settings.showMaximiseIcon = true;
+localStorage.setItem('dqweb.layout',JSON.stringify(savedLayout));
+var myLayout = new GoldenLayout(savedLayout,$('#layoutContainer'));//var myLayout = new GoldenLayout(savedLayout);
+
+var closedCode = JSON.parse(localStorage.getItem('dqweb.closed') || "[]");
+var sharedCode = JSON.parse(localStorage.getItem('dqweb.shared') || "[]");
+localStorage.setItem('dqweb.closed',JSON.stringify(closedCode));
+localStorage.setItem('dqweb.shared',JSON.stringify(sharedCode));
+
+CodeMirror.defaults.indentUnit=4;
+
+function emptyTrash() {
+	if(window.confirm("Do you really want to empty the trash?") && window.confirm ("Are you sure?")) {
+		closedCode = [];updateClosed();
+	}
+};
+
+function updateClosed() {
+	closedCode = closedCode.slice(0,dqweb.trashSize);
+	localStorage.setItem('dqweb.closed',JSON.stringify(closedCode));
+	$('#closed')[0].text='TRASH('+closedCode.length+')';
+	if (closedCode.length) $('#menuCL').fadeIn(); else $('#menuCL').fadeOut();
+};
+
+function updateShared() {
+	localStorage.setItem('dqweb.shared',JSON.stringify(sharedCode));
+	$('#shared')[0].text='SHARED('+sharedCode.length+')';
+	if (sharedCode.length) $('#menuSH').fadeIn(); else $('#menuSH').fadeOut();
+};
+
+function findServer(cm) { 
+	var n = cm.getCursor().line;
+	while(n-- >0){
+		var line = cm.getLine(n).trimEnd().replace(/[\s]+/g," ").split(" ");
+		if (line.length>1 && line[0]=="//@SERVER" && line[1]!=="...") return line[1];
+	}
+	return dqweb.defaultServer;
+};
+
+function visitComps(layout,fn,x) {
+	if(layout.type=='component') fn(x,layout); else for (var l of layout.content) visitComps(l,fn,x); return x;
+}
+
+function exportableData(){
+	var lo = myLayout.toConfig();
+	var data = {layout:GoldenLayout.minifyConfig(lo),code:{}};
+	visitComps(lo,function(d,c){
+		if(c.componentName=='code'){
+			var id = 'dqweb.code'+c.componentState.index;
+			d.code[id] = {title:c.componentState.title,code:localStorage.getItem(id)};
+		}
+	},data);
+	return data;
+}
+
+function exportSession(){
+	var fn = window.prompt("File name");if(!fn.toLowerCase().endsWith(".json")) fn+=".json";
+	saveAs(new Blob([JSON.stringify(exportableData())],{type: "text/plain;charset=utf-8"}),fn);
+}
+
+function importSession(a){
+	var f = document.getElementById('inputFile').files[0];
+	if(f){
+		var fr = new FileReader();
+		fr.onload=function(){
+			var session = JSON.parse(fr.result);
+			if(a){
+				if(window.confirm("Are you OK with replacing your code/layout?")) {
+					visitComps(myLayout.toConfig(),function(x,c){
+						if(c.componentName=='code') localStorage.removeItem('dqweb.code'+c.componentState.index);
+					},0);
+				} else {
+					document.getElementById('importSession').close();
+					return 0;
+				}
+				localStorage.setItem('dqweb.layout',JSON.stringify(GoldenLayout.unminifyConfig(session.layout)));
+			}
+			for (var id in session.code) {
+				if (a)
+					localStorage.setItem(id,session.code[id].code);
+				else
+					sharedCode.unshift(session.code[id]);
+			}
+			localStorage.setItem('dqweb.shared',JSON.stringify(sharedCode));
+			window.location.reload();
+		}
+		fr.readAsText(f);
+	}
+}
+
+function migrateCode(code) {return code.replace('\t','    ').split('\n').map(function(l){return l.startsWith('//@HOST ') ? ('//@SERVER '+l.substring(8)): l;}).join('\n');}
+
+function findServer(cm) { 
+	var n = cm.getCursor().line;
+	while(n-- >0){
+		var line = cm.getLine(n).trimEnd().replace(/[\s]+/g," ").split(" ");
+		if (line.length>1 && line[0]=="//@SERVER" && line[1]!=="...") return line[1];
+	}
+	return dqweb.defaultServer;
+};
+
+function setOutput(cm,url) {
+	var n = cm.getCursor().line; var name="";
+	while(n-- >0) {
+		var line = cm.getLine(n).trimEnd().replace(/[\s]+/g," ").split(" ");
+		if (line[0]=="//@OUTPUT") { name=line.slice(1).join(" ").trim(); break;}
+	}
+	if (name.length>0) {
+		var outputId = "output_"+name;
+		if (!document.getElementById(outputId)) {
+			var outCont = outputContainer.parent
+			var placement = outCont.parent, ix=-1;
+			while (!(("contentItems" in placement)&&(-1!=(ix=placement.contentItems.indexOf(outCont)))))
+				placement = placement.parent;
+			if(ix!=-1)
+				placement.addChild({type: 'component', isClosable: true, componentName: 'output', componentState: {name:name, src:url}},ix+1);
+		} else {
+			outputIframe[name].src=url;
+		}
+	}
+	else
+		outputIframe[""].src=url;
+}
+
+function optionsAbove(cm){
+	var ops = {}, i = cm.getCursor('from').line,l;
+	while(0<=--i && (l=cm.getLine(i)).startsWith("//@")) {
+		var ls = l.split(" ");
+		if (!(ls[0] in ops)) ops[ls[0]]=(ls.slice(1).join(" ")).trim();
+	}
+	return ops;
+}
+
+function consent(ops){return (!("//@WARN" in ops)) || window.confirm("Warning: "+ops["//@WARN"]+"\nDo you want to continue?");}
+function file(ops){return (ops["//@FILE"]||"").split(" ")[0];}
+
+function ctrlEnter(cm){
+	var cur = cm.getCursor();
+	var line = cm.getLine(cur.line).trimEnd();
+	var code = cm.getSelection().trimEnd();
+	if (code.length==0) code = line;
+	var oneline = line == code;
+	if (oneline && line=="//@SERVER" && cm.getLine(cur.line).length>9) {
+		var servers = {};
+		for (var cod of visitComps(myLayout.toConfig(),function(x,y){if(y.componentName=='code')x.push(y);},[])) {
+			for (var l of localStorage.getItem('dqweb.code'+cod.componentState.index).split('\n')) {
+				if (l.startsWith("//@SERVER ")) {
+					var ls = l.substring(10).trim().split(" ");
+					if (ls.length) {
+						var srv = ls[0]; var com = ls.slice(1).join(' ').trim();
+						if (srv.length&&((servers[srv]==undefined)||(servers[srv].length<com.length))) servers[srv]=com;
+					}
+				}
+			}
+		}
+		var hints = [];var maxsl = 0;for (const k in servers) maxsl = Math.max(maxsl,k.length);
+		for (const [k,c] of Object.entries(servers)) hints.push((k+" ".repeat(2+maxsl-k.length)+c).trimEnd());hints.sort();
+		cm.showHint({hint:function(cm){
+			var prefix = cm.getLine(cm.getCursor().line).slice(10).trim();
+			return{list:hints.filter(function(s){return s.startsWith(prefix);}),from:{line:cur.line,ch:10},to:{line:cur.line,ch:cm.getLine(cur.line).length}};
+		}});
+	} else if (oneline && line.startsWith("//@TITLE ")) {
+		var title = line.substring(8).trim();
+		cm.glContainer.extendState({title:title});
+		cm.glContainer.setTitle(title);
+		saveLayout();
+	} else if (oneline && line.startsWith("//@URL ")) {
+		console.log(line);
+		var url = line.substring(7).trim().split(' ');
+		if (url.length>0) setOutput(cm,url[0]);
+	} else {
+		var host=findServer(cm);var ops=optionsAbove(cm);
+		var url="http://"+host+"/"+file(ops)+"?"+encodeURIComponent(code);
+		if (consent(ops))
+			setOutput(cm,url);
+	}
+};
+
+function altEnter(cm){
+	var cur = cm.getCursor();
+	ws = cm.lineInfo(cur.line).widgets;if (ws!==undefined && ws!=null) for (w of ws) w.clear();
+	var line = cm.getLine(cur.line).trimEnd();
+	var code = cm.getSelection().trimEnd();
+	if (code.length==0) code = line;
+	var host=findServer(cm);var ops=optionsAbove(cm);
+	var url="http://"+host+"/?"+encodeURIComponent(code);
+	if (consent(ops))
+	{
+		var whandle = cm.addLineWidget(cur.line,$('<div>⏳</div>')[0]);
+		var ifr = document.createElement('iframe');
+		ifr.addEventListener('load',function(){
+			var line = cm.getLineNumber(whandle.line);
+			whandle.clear();
+			if (ifr.contentDocument) {
+				var res = ifr.contentDocument.body.innerText.trim().split('\n').map(function(x){return "/| "+x}).join('\n');
+				ifr.remove();
+				if (line) {
+					var ll = cm.getLine(line).length;
+					cm.replaceRange('\n'+res,{line:line,ch:ll},{line:line,ch:ll});
+				}
+				cm.setCursor(cm.getCursor(),{scroll:true});
+			} else 
+				window.alert("Alt+Enter only works if you host DQWEB from your target q server.");
+		});
+		ifr.src=url;
+		document.getElementById('loaders').append(ifr);
+		if(cm.lastLine()==cur.line) {
+			var lineend = {line:cur.line,ch:cm.getLine(cur.line).length};
+			cm.replaceRange('\n',lineend,lineend);
+		}
+		cm.setCursor(cur.line+1,0,{scroll:true});
+	}
+};
+
+function shareCode(cm){
+	var t = cm.glContainer.getState().title,c = cm.getValue();
+	var dummy = document.createElement("textarea");
+    document.body.appendChild(dummy);
+    dummy.value = dqweb.shareUrl+"#"+LZString.compressToEncodedURIComponent(JSON.stringify({title:t,code:c}));
+    dummy.select();
+    document.execCommand("copy");
+    document.body.removeChild(dummy);	
+	window.alert("Share link is copied to the clipboard!");
+};
+
+myLayout.registerComponent( 'code', function( container, state ){
+	var newData = {};
+	if (state.index==-1 && closedCode.length>0) {
+		newData = closedCode[0]; newData.type=-1;
+	}
+	if (state.index==-2 && sharedCode.length>0) {
+		newData = sharedCode[0]; newData.type=-2;
+	}
+	if ("code" in state) {
+		newData.code = state.code;
+		delete state['code'];
+	}	
+	if (state.index>0) {
+		maxIndex = Math.max(maxIndex,state.index);
+	} else {
+		state.index=++maxIndex;
+	};
+	if (!state.title) {
+		state.title= newData.title || "Code "+state.index
+	};
+	container.setState(state);
+	container.setTitle(state.title);
+	var id = "dqweb.code"+state.index;
+	var c = migrateCode(newData.code || localStorage.getItem(id) || "//@TITLE ...\n//@SERVER ...");
+	localStorage.setItem(id,c);
+	var initFn = function(){
+		var editor = CodeMirror(container.getElement()[0], {
+			value:c, lineNumbers: true, mode: "q", matchBrackets: true, styleActiveLine: true, theme: "eclipse"
+		});
+		editor.setSize("100%","100%");
+		editor.on("change",async function(x,y){localStorage.setItem(id,x.getValue());});
+		editor.setOption("extraKeys",{'Ctrl-Enter':ctrlEnter,'Alt-Enter':altEnter,'Ctrl-Space' : "autocomplete","Ctrl-S":shareCode,
+			Tab: function(cm) {
+				var spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
+				cm.replaceSelection(spaces);
+			}
+		});
+		editor.glContainer = container;
+	};
+	//this init (hack?) works for startup init and drag too
+	container.on('resize',function(){
+		initFn();container.unbind('resize');
+		if('type' in newData) {
+			if (newData.type==-1) {closedCode.shift();updateClosed();}
+			if (newData.type==-2) {sharedCode.shift();updateShared();}
+		}
+	});
+	//delete code from storage when closed
+	container.on('destroy',function(){
+		closedCode.unshift({code:localStorage.getItem(id),title:container.getState().title});
+		localStorage.removeItem(id);
+		updateClosed();
+	});
+});
+
+myLayout.registerComponent( 'help', function( container, componentState ){
+	container.getElement()[0].style.overflow="auto";
+    container.getElement()[0].append(document.getElementById('helpText').content.cloneNode(true));
+	container.on('resize',function(){
+		$("#default_server").text(function(){return dqweb.defaultServer;});
+		$("#share_url").text(function(){return dqweb.shareUrl;});
+		$("#trash_size").text(function(){return ""+dqweb.trashSize;});
+	});
+});
+
+var outputContainer, outputIframe = {};
+myLayout.registerComponent( 'output', function( container, componentState ){
+	var name = componentState.name || "";
+	var src = componentState.src || ""; delete componentState["src"];
+	container.setState(componentState);
+	if (name=="") outputContainer=container;
+	var outputId = "output"+(name==""?"":"_"+name);
+	var ifr = $('<iframe id="'+outputId+'" src="'+src+'" width="100%" height="100%"/>')[0];
+	outputIframe[name] = ifr;
+    container.getElement()[0].append(ifr);
+	container.setTitle("Output "+name);
+	ifr.addEventListener('load',function(){
+		container.setTitle("Output "+name+" ("+(new URL(ifr.src)).host+")");
+		container.parent.parent.setActiveContentItem(container.parent);
+	});
+});
+
+myLayout.inited = false;
+async function saveLayout() {if(myLayout.inited) localStorage.setItem('dqweb.layout',JSON.stringify(myLayout.toConfig()));};
+myLayout.on('initialised',function(){myLayout.inited = true;});
+myLayout.on('stateChanged', saveLayout);
+CodeMirror.registerHelper("hintWords","q",("//@SERVER,//@TITLE,//@WARN,//@FILE,//@OUTPUT,//@URL,"+dqweb.qwords).split(','));
+$(window).resize(function () {myLayout.updateSize($(window).width()-9, $(window).height()-34);});
+myLayout.createDragSource(document.getElementById("new"),   {type: 'component', componentName: 'code', componentState: { index:  0}});
+myLayout.createDragSource(document.getElementById("closed"),{type: 'component', componentName: 'code', componentState: { index: -1}});
+myLayout.createDragSource(document.getElementById("shared"),{type: 'component', componentName: 'code', componentState: { index: -2}});
+myLayout.createDragSource(document.getElementById("help"),  {type: 'component', componentName: 'help', title:"Help", componentState: {}});
+
+var alreadyOpen = false;
+window.addEventListener('load',function(){
+	if (location.hash.length>1) {
+		sharedCode.unshift(JSON.parse(LZString.decompressFromEncodedURIComponent(location.hash.substring(1))));
+		location.hash="";
+	}
+	updateClosed();updateShared();
+	var checkOther = function(){alreadyOpen=true;};
+	window.addEventListener('storage',checkOther);
+	
+	setTimeout(function(){
+		window.removeEventListener('storage',checkOther);
+		if (alreadyOpen) {
+			$("#pleaseClose").fadeIn();
+		} else {
+			$("#menubar").show();myLayout.init();
+			setInterval(function(){
+				localStorage.setItem("dqweb.now",Date.now().toString());
+			},100);
+			setInterval(function(){
+				sharedCode = JSON.parse(localStorage.getItem('dqweb.shared'));updateShared();
+			},1000);
+		}
+	},1000);
+});
+</script>
+</body>
