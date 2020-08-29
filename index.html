@@ -57,20 +57,22 @@
 	You can work with multiple hosts in the same document by adding multiple //@SERVER comments.<br/>
 	The default server is <span id="default_server">...</span>.<br/>
 	Press Ctrl+Enter after "//@SERVER " to get hints collected from all the open editors with the longest comment. 
-	<h4>//@TITLE title</h4>Add this comment and execute (Ctrl+Enter) to set the title of your code editor.
-	<h4>//@WARN message</h4>Add this comment right above yout query to show a warning message before execution.
-	<h4>//@FILE filename [comments]</h4>Add this comment right above yout query to download the results into a file (like .csv,.xls etc...).
-	<h4>//@OUTPUT [name]</h4>Add this comment to set the target output window for the queries below the comment. 
-	<h4>//@URL url [comments]</h4>Add this comment and execute (Ctrl+Enter) to open url in the target output window.
 	<h4>Ctrl+Enter / Alt+Enter</h4>
 	Press Ctrl+Enter to execute current line or selected code and show results in Output. Works with multiple lines too.<br/>
 	If you host DQWEB from your targer q server (see start.q), you can press Alt+Enter to inline the results in comments below the executed code.
+	<h4>//@TITLE title</h4>Add this comment and execute (Ctrl+Enter) to set the title of your code editor.
+	<h4>//@WARN message</h4>Add this comment right above your query to show a warning message before execution.
+	<h4>//@FILE filename [comments]</h4>Add this comment right above your query to download the results into a file (like .csv,.xls etc...).
+	<h4>//@TRAP [comments]</h4>Add this comment right above your query to get the stack trace of a (potential) error.
+	<h4>//@OUTPUT [name]</h4>Add this comment to set the target output window for queries or urls below the comment. 
+	<h4>//@URL url [comments]</h4>Add this comment and execute (Ctrl+Enter) to open url in the target output window.
+	<h4>//@MAC name definition</h4>Macros provide a non-intrusive way of defining q values (function or data) on the clint side. If the "name" macro is defined in any of the q editors the "!!name" string is replaced with its definition before execution. Macros can be nested. Warnings are shown for duplicate definitions on execution.
 	<h4>Ctrl+Space</h4>
 	Code completion for standard q keywords longer than 3 characters and the .Q namespace.
 	<h4>Ctrl+s</h4>
 	Copies a link to the clipboard that encodes the code editor's title and code and can be sent to others. The target DQWEB instance is <span id="share_url">...</span>.
-	<h3>Export</h3>Export all your code and layout to JSON.
-	<h3>Import</h3>Import (i.e. replace) your code and layout from JSON or keep everything and only import code (it will show up in SHARED).
+	<h3>Export</h3>Export all your code and layout to JSON. Simply click "EXPORT" + "Ok" for quick timestamped export.
+	<h3>Import</h3>Click "IMPORT" to import (i.e. replace) your code and layout from JSON or keep everything and only import code (it will show up in SHARED).
 	<h3>Credits</h3>
 	You downloaded this from <a href="https://github.com/adotsch/dqweb" target="_blank">GitHub</a> for free, or you use it from <a href="https://adotsch.github.io/dqweb/index.html" target="_blank">github.io</a>. Use it at your own risk, I provide no support.
 	<ul>
@@ -120,7 +122,7 @@ localStorage.setItem('dqweb.shared',JSON.stringify(sharedCode));
 CodeMirror.defaults.indentUnit=4;
 
 function emptyTrash() {
-	if(window.confirm("Do you really want to empty the trash?") && window.confirm ("Are you sure?")) {
+	if (window.confirm("Do you really want to empty the trash?") && window.confirm ("Are you sure?")) {
 		closedCode = [];updateClosed();
 	}
 };
@@ -140,7 +142,7 @@ function updateShared() {
 
 function findServer(cm) { 
 	var n = cm.getCursor().line;
-	while(n-- >0){
+	while (n-- >0) {
 		var line = cm.getLine(n).trimEnd().replace(/[\s]+/g," ").split(" ");
 		if (line.length>1 && line[0]=="//@SERVER" && line[1]!=="...") return line[1];
 	}
@@ -148,14 +150,14 @@ function findServer(cm) {
 };
 
 function visitComps(layout,fn,x) {
-	if(layout.type=='component') fn(x,layout); else for (var l of layout.content) visitComps(l,fn,x); return x;
+	if (layout.type=='component') fn(x,layout); else for (var l of layout.content) visitComps(l,fn,x); return x;
 }
 
-function exportableData(){
+function exportableData() {
 	var lo = myLayout.toConfig();
 	var data = {layout:GoldenLayout.minifyConfig(lo),code:{}};
 	visitComps(lo,function(d,c){
-		if(c.componentName=='code'){
+		if (c.componentName=='code') {
 			var id = 'dqweb.code'+c.componentState.index;
 			d.code[id] = {title:c.componentState.title,code:localStorage.getItem(id)};
 		}
@@ -163,21 +165,22 @@ function exportableData(){
 	return data;
 }
 
-function exportSession(){
-	var fn = window.prompt("File name");if(!fn.toLowerCase().endsWith(".json")) fn+=".json";
+function exportSession() {
+	var fn = window.prompt("File name","dqweb."+(new Date().toISOString()).substring(0,16).replace(/[-:]/g,".").replace("T","_"));
+	if (!fn.toLowerCase().endsWith(".json")) fn+=".json";
 	saveAs(new Blob([JSON.stringify(exportableData())],{type: "text/plain;charset=utf-8"}),fn);
 }
 
-function importSession(a){
+function importSession(a) {
 	var f = document.getElementById('inputFile').files[0];
-	if(f){
+	if (f) {
 		var fr = new FileReader();
 		fr.onload=function(){
 			var session = JSON.parse(fr.result);
-			if(a){
-				if(window.confirm("Are you OK with replacing your code/layout?")) {
+			if (a) {
+				if (window.confirm("Are you OK with replacing your code/layout?")) {
 					visitComps(myLayout.toConfig(),function(x,c){
-						if(c.componentName=='code') localStorage.removeItem('dqweb.code'+c.componentState.index);
+						if (c.componentName=='code') localStorage.removeItem('dqweb.code'+c.componentState.index);
 					},0);
 				} else {
 					document.getElementById('importSession').close();
@@ -202,7 +205,7 @@ function migrateCode(code) {return code.replace('\t','    ').split('\n').map(fun
 
 function findServer(cm) { 
 	var n = cm.getCursor().line;
-	while(n-- >0){
+	while (n-- >0) {
 		var line = cm.getLine(n).trimEnd().replace(/[\s]+/g," ").split(" ");
 		if (line.length>1 && line[0]=="//@SERVER" && line[1]!=="...") return line[1];
 	}
@@ -211,7 +214,7 @@ function findServer(cm) {
 
 function setOutput(cm,url) {
 	var n = cm.getCursor().line; var name="";
-	while(n-- >0) {
+	while (n-- >0) {
 		var line = cm.getLine(n).trimEnd().replace(/[\s]+/g," ").split(" ");
 		if (line[0]=="//@OUTPUT") { name=line.slice(1).join(" ").trim(); break;}
 	}
@@ -222,7 +225,7 @@ function setOutput(cm,url) {
 			var placement = outCont.parent, ix=-1;
 			while (!(("contentItems" in placement)&&(-1!=(ix=placement.contentItems.indexOf(outCont)))))
 				placement = placement.parent;
-			if(ix!=-1)
+			if (ix!=-1)
 				placement.addChild({type: 'component', isClosable: true, componentName: 'output', componentState: {name:name, src:url}},ix+1);
 		} else {
 			outputIframe[name].src=url;
@@ -232,40 +235,63 @@ function setOutput(cm,url) {
 		outputIframe[""].src=url;
 }
 
-function optionsAbove(cm){
+function optionsAbove(cm) {
 	var ops = {}, i = cm.getCursor('from').line,l;
-	while(0<=--i && (l=cm.getLine(i)).startsWith("//@")) {
+	while (0<=--i && (l=cm.getLine(i)).startsWith("//@")) {
 		var ls = l.split(" ");
 		if (!(ls[0] in ops)) ops[ls[0]]=(ls.slice(1).join(" ")).trim();
 	}
 	return ops;
 }
 
-function consent(ops){return (!("//@WARN" in ops)) || window.confirm("Warning: "+ops["//@WARN"]+"\nDo you want to continue?");}
-function file(ops){return (ops["//@FILE"]||"").split(" ")[0];}
+function runMode(ops,code) {
+	code = applyMacros(code);
+	return "//@TRAP" in ops ? '.Q.trp[value;"'+code.replace(/"/g,'\"')+'";{enlist["error: ",x],"\n" vs .Q.sbt y}]' : code;
+}
 
-function ctrlEnter(cm){
+function scaneAllCodeFor(prefix,data,action) {
+	return visitComps(myLayout.toConfig(),function(x,y){
+		if (y.componentName=='code') {
+			for (var l of localStorage.getItem('dqweb.code'+y.componentState.index).split('\n')) {
+				if (l.startsWith(prefix)) {
+					var ls = l.substring(prefix.length).trim().split(" ");
+					if (ls.length) {
+						var k = ls[0]; var v = ls.slice(1).join(' ').trim();
+						action(x,k,v);
+					}
+				}
+			}
+		}
+	},data);
+}
+
+function applyMacros(code) {
+	mac = scaneAllCodeFor("//@MAC ",{},function(d,k,v) {if (k in d) window.alert("Duplicate definition for "+k+" : "+v); else if (v.length) d[k] = v;});
+	var updated = false;
+	do {
+		updated = false;
+		for (var name of Object.keys(mac).sort().reverse())
+			while (code.includes("!!"+name)) { code = code.replace("!!"+name,mac[name]);updated=true;}
+	} while (updated);
+	return code;
+}
+
+function consent(ops) {return (!("//@WARN" in ops)) || window.confirm("Warning: "+ops["//@WARN"]+"\nDo you want to continue?");}
+function file(ops) {return (ops["//@FILE"]||"").split(" ")[0];}
+
+function ctrlEnter(cm) {
 	var cur = cm.getCursor();
 	var line = cm.getLine(cur.line).trimEnd();
 	var code = cm.getSelection().trimEnd();
 	if (code.length==0) code = line;
 	var oneline = line == code;
 	if (oneline && line=="//@SERVER" && cm.getLine(cur.line).length>9) {
-		var servers = {};
-		for (var cod of visitComps(myLayout.toConfig(),function(x,y){if(y.componentName=='code')x.push(y);},[])) {
-			for (var l of localStorage.getItem('dqweb.code'+cod.componentState.index).split('\n')) {
-				if (l.startsWith("//@SERVER ")) {
-					var ls = l.substring(10).trim().split(" ");
-					if (ls.length) {
-						var srv = ls[0]; var com = ls.slice(1).join(' ').trim();
-						if (srv.length&&((servers[srv]==undefined)||(servers[srv].length<com.length))) servers[srv]=com;
-					}
-				}
-			}
-		}
+		var servers = scaneAllCodeFor("//@SERVER ",{},function(srvs,s,c){
+			if (s.length&&((srvs[s]==undefined)||(srvs[s].length<c.length))) srvs[s]=c;
+		});
 		var hints = [];var maxsl = 0;for (const k in servers) maxsl = Math.max(maxsl,k.length);
 		for (const [k,c] of Object.entries(servers)) hints.push((k+" ".repeat(2+maxsl-k.length)+c).trimEnd());hints.sort();
-		cm.showHint({hint:function(cm){
+		cm.showHint({hint:function(cm) {
 			var prefix = cm.getLine(cm.getCursor().line).slice(10).trim();
 			return{list:hints.filter(function(s){return s.startsWith(prefix);}),from:{line:cur.line,ch:10},to:{line:cur.line,ch:cm.getLine(cur.line).length}};
 		}});
@@ -280,20 +306,20 @@ function ctrlEnter(cm){
 		if (url.length>0) setOutput(cm,url[0]);
 	} else {
 		var host=findServer(cm);var ops=optionsAbove(cm);
-		var url="http://"+host+"/"+file(ops)+"?"+encodeURIComponent(code);
+		var url="http://"+host+"/"+file(ops)+"?"+encodeURIComponent(runMode(ops,code));
 		if (consent(ops))
 			setOutput(cm,url);
 	}
 };
 
-function altEnter(cm){
+function altEnter(cm) {
 	var cur = cm.getCursor();
 	ws = cm.lineInfo(cur.line).widgets;if (ws!==undefined && ws!=null) for (w of ws) w.clear();
 	var line = cm.getLine(cur.line).trimEnd();
 	var code = cm.getSelection().trimEnd();
 	if (code.length==0) code = line;
 	var host=findServer(cm);var ops=optionsAbove(cm);
-	var url="http://"+host+"/?"+encodeURIComponent(code);
+	var url="http://"+host+"/?"+encodeURIComponent(runMode(ops,code));
 	if (consent(ops))
 	{
 		var whandle = cm.addLineWidget(cur.line,$('<div>⏳</div>')[0]);
@@ -314,7 +340,7 @@ function altEnter(cm){
 		});
 		ifr.src=url;
 		document.getElementById('loaders').append(ifr);
-		if(cm.lastLine()==cur.line) {
+		if (cm.lastLine()==cur.line) {
 			var lineend = {line:cur.line,ch:cm.getLine(cur.line).length};
 			cm.replaceRange('\n',lineend,lineend);
 		}
@@ -322,7 +348,7 @@ function altEnter(cm){
 	}
 };
 
-function shareCode(cm){
+function shareCode(cm) {
 	var t = cm.glContainer.getState().title,c = cm.getValue();
 	var dummy = document.createElement("textarea");
     document.body.appendChild(dummy);
@@ -333,7 +359,7 @@ function shareCode(cm){
 	window.alert("Share link is copied to the clipboard!");
 };
 
-myLayout.registerComponent( 'code', function( container, state ){
+myLayout.registerComponent('code', function( container, state ) {
 	var newData = {};
 	if (state.index==-1 && closedCode.length>0) {
 		newData = closedCode[0]; newData.type=-1;
@@ -373,22 +399,22 @@ myLayout.registerComponent( 'code', function( container, state ){
 		editor.glContainer = container;
 	};
 	//this init (hack?) works for startup init and drag too
-	container.on('resize',function(){
+	container.on('resize',function() {
 		initFn();container.unbind('resize');
-		if('type' in newData) {
+		if ('type' in newData) {
 			if (newData.type==-1) {closedCode.shift();updateClosed();}
 			if (newData.type==-2) {sharedCode.shift();updateShared();}
 		}
 	});
 	//delete code from storage when closed
-	container.on('destroy',function(){
+	container.on('destroy',function() {
 		closedCode.unshift({code:localStorage.getItem(id),title:container.getState().title});
 		localStorage.removeItem(id);
 		updateClosed();
 	});
 });
 
-myLayout.registerComponent( 'help', function( container, componentState ){
+myLayout.registerComponent('help', function( container, componentState ) {
 	container.getElement()[0].style.overflow="auto";
     container.getElement()[0].append(document.getElementById('helpText').content.cloneNode(true));
 	container.on('resize',function(){
@@ -399,7 +425,7 @@ myLayout.registerComponent( 'help', function( container, componentState ){
 });
 
 var outputContainer, outputIframe = {};
-myLayout.registerComponent( 'output', function( container, componentState ){
+myLayout.registerComponent('output', function( container, componentState ){
 	var name = componentState.name || "";
 	var src = componentState.src || ""; delete componentState["src"];
 	container.setState(componentState);
@@ -416,10 +442,10 @@ myLayout.registerComponent( 'output', function( container, componentState ){
 });
 
 myLayout.inited = false;
-async function saveLayout() {if(myLayout.inited) localStorage.setItem('dqweb.layout',JSON.stringify(myLayout.toConfig()));};
+async function saveLayout() {if (myLayout.inited) localStorage.setItem('dqweb.layout',JSON.stringify(myLayout.toConfig()));};
 myLayout.on('initialised',function(){myLayout.inited = true;});
 myLayout.on('stateChanged', saveLayout);
-CodeMirror.registerHelper("hintWords","q",("//@SERVER,//@TITLE,//@WARN,//@FILE,//@OUTPUT,//@URL,"+dqweb.qwords).split(','));
+CodeMirror.registerHelper("hintWords","q",("//@SERVER,//@TITLE,//@WARN,//@FILE,//@OUTPUT,//@URL,//@TRAP,"+dqweb.qwords).split(','));
 $(window).resize(function () {myLayout.updateSize($(window).width()-9, $(window).height()-34);});
 myLayout.createDragSource(document.getElementById("new"),   {type: 'component', componentName: 'code', componentState: { index:  0}});
 myLayout.createDragSource(document.getElementById("closed"),{type: 'component', componentName: 'code', componentState: { index: -1}});
