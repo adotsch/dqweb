@@ -10,6 +10,8 @@ Simple web interface for kdb+/q processes.
  * Trash: undo close documents
  * Save query results into CSV, XLS, ...
  * Set warnings before certain queries
+ * Server side debuggig via extended trap
+ * Client side macros
  * Multiple output windows
  * Code sharing via links
  * Export & import layout and code into JSON
