@@ -246,7 +246,7 @@ function optionsAbove(cm) {
 
 function runMode(ops,code) {
 	code = applyMacros(code);
-	return "//@TRAP" in ops ? '.Q.trp[value;"'+code.replace(/"/g,'\"')+'";{enlist["error: ",x],"\n" vs .Q.sbt y}]' : code;
+	return "//@TRAP" in ops ? '.Q.trp[value;"'+code.replace(/"/g,'\\"')+'";{enlist["error: ",x],"\n" vs .Q.sbt y}]' : code;
 }
 
 function scaneAllCodeFor(prefix,data,action) {
