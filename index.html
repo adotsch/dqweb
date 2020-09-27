@@ -29,6 +29,7 @@
 <span id="menuSH" style="display:none"><a id="shared" title="Drag and drop this to open shared code" href="#">SHARED</a> |</span>
 <span><a title="Import from JSON" href="#" onclick="document.getElementById('importSession').showModal()">IMPORT</a> |</span>
 <span><a title="Export from JSON" href="#" onclick="exportSession()">EXPORT</a> |</span>
+<span><a id="demo" title="Demo" href="#">DEMO</a> |</span>
 <span><a id="help" title="Drag and drop this to open help page" href="#">HELP</a></span>
 </div>
 <div id="layoutContainer" style="position:absolute; top: 30; left: 3; width: calc(100% - 9px); height: calc(100% - 34px)"></div>
@@ -205,19 +206,23 @@ function migrateCode(code) {return code.replace('\t','    ').split('\n').map(fun
 
 function findServer(cm) { 
 	var n = cm.getCursor().line;
+	var res = ["",""];  // server, proxy
 	while (n-- >0) {
 		var line = cm.getLine(n).trimEnd().replace(/[\s]+/g," ").split(" ");
-		if (line.length>1 && line[0]=="//@SERVER" && line[1]!=="...") return line[1];
+		if (res[0].length>0  && res[1].length==0 && line.length>1 && line[0]=="//@PROXY"){res[1] = line[1]; return res;};
+		if (res[0].length==0 && line.length>1 && line[0]=="//@SERVER" && line[1]!=="...") res[0] = line[1];
 	}
-	return dqweb.defaultServer;
+	if(res[0].length=0) res[0] = dqweb.defaultServer;
+	return res;
 };
 
-function setOutput(cm,url) {
+function setOutput(server,cm,url) {
 	var n = cm.getCursor().line; var name="";
 	while (n-- >0) {
 		var line = cm.getLine(n).trimEnd().replace(/[\s]+/g," ").split(" ");
 		if (line[0]=="//@OUTPUT") { name=line.slice(1).join(" ").trim(); break;}
 	}
+	outputServer[name] = server;
 	if (name.length>0) {
 		var outputId = "output_"+name;
 		if (!document.getElementById(outputId)) {
@@ -244,9 +249,24 @@ function optionsAbove(cm) {
 	return ops;
 }
 
-function runMode(ops,code) {
+function createQuery(ops,code) {
 	code = applyMacros(code);
-	return "//@TRAP" in ops ? '.Q.trp[value;"'+code.replace(/"/g,'\\"')+'";{enlist["error: ",x],"\n" vs .Q.sbt y}]' : code;
+	if ("//@TRAP" in ops) code='.Q.trp[value;"'+code.replace(/"/g,'\\"')+'";{enlist["error: ",x],"\n" vs .Q.sbt y}]';
+	return code;
+}
+
+function asStr(s) {return '"'+s.replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"';}
+function firstWord(s) {var ss=s.split(" ");return s.length?ss[0]:s;}
+function createQueryUrl(server,ops,code) {
+	if ("//@ONCE" in ops) server[0] = firstWord(ops["//@ONCE"]);
+	var s = server[0];
+	code = applyMacros(code);
+	if ("//@TRAP" in ops) code='.Q.trp[value;'+asStr(code)+';{enlist["error: ",x],"\n" vs .Q.sbt y}]';
+	if (server[1].length>0) {
+		code = ".dqweb.h["+asStr(s)+"]"+asStr(code);
+		s = server[1];
+	}
+	return "http://"+s+"/"+file(ops)+"?"+encodeURIComponent(code);
 }
 
 function scaneAllCodeFor(prefix,data,action) {
@@ -285,7 +305,7 @@ function ctrlEnter(cm) {
 	var code = cm.getSelection().trimEnd();
 	if (code.length==0) code = line;
 	var oneline = line == code;
-	if (oneline && line=="//@SERVER" && cm.getLine(cur.line).length>9) {
+	if (oneline && (line=="//@SERVER" || line=="//@ONCE") /*&& cm.getLine(cur.line).endsWith(" ")*/) {
 		var servers = scaneAllCodeFor("//@SERVER ",{},function(srvs,s,c){
 			if (s.length&&((srvs[s]==undefined)||(srvs[s].length<c.length))) srvs[s]=c;
 		});
@@ -303,12 +323,12 @@ function ctrlEnter(cm) {
 	} else if (oneline && line.startsWith("//@URL ")) {
 		console.log(line);
 		var url = line.substring(7).trim().split(' ');
-		if (url.length>0) setOutput(cm,url[0]);
+		if (url.length>0) setOutput(url[0],cm,url[0]);
 	} else {
-		var host=findServer(cm);var ops=optionsAbove(cm);
-		var url="http://"+host+"/"+file(ops)+"?"+encodeURIComponent(runMode(ops,code));
+		var server=findServer(cm);var ops=optionsAbove(cm);
+		var url=createQueryUrl(server,ops,code);
 		if (consent(ops))
-			setOutput(cm,url);
+			setOutput(server[0],cm,url);
 	}
 };
 
@@ -318,8 +338,8 @@ function altEnter(cm) {
 	var line = cm.getLine(cur.line).trimEnd();
 	var code = cm.getSelection().trimEnd();
 	if (code.length==0) code = line;
-	var host=findServer(cm);var ops=optionsAbove(cm);
-	var url="http://"+host+"/?"+encodeURIComponent(runMode(ops,code));
+	var server=findServer(cm);var ops=optionsAbove(cm);
+	var url=createQueryUrl(server,ops,code);
 	if (consent(ops))
 	{
 		var whandle = cm.addLineWidget(cur.line,$('<div>⏳</div>')[0]);
@@ -328,7 +348,7 @@ function altEnter(cm) {
 			var line = cm.getLineNumber(whandle.line);
 			whandle.clear();
 			if (ifr.contentDocument) {
-				var res = ifr.contentDocument.body.innerText.trim().split('\n').map(function(x){return "/| "+x}).join('\n');
+				var res = ifr.contentDocument.body.innerText.trim().split('\n').map(function(x){return "/"+x}).join('\n');
 				ifr.remove();
 				if (line) {
 					var ll = cm.getLine(line).length;
@@ -386,7 +406,7 @@ myLayout.registerComponent('code', function( container, state ) {
 	localStorage.setItem(id,c);
 	var initFn = function(){
 		var editor = CodeMirror(container.getElement()[0], {
-			value:c, lineNumbers: true, mode: "q", matchBrackets: true, styleActiveLine: true, theme: "eclipse"
+			value:c, lineNumbers: true, mode: "q", matchBrackets: true, styleActiveLine: true, theme: "eclipse",
 		});
 		editor.setSize("100%","100%");
 		editor.on("change",async function(x,y){localStorage.setItem(id,x.getValue());});
@@ -424,7 +444,7 @@ myLayout.registerComponent('help', function( container, componentState ) {
 	});
 });
 
-var outputContainer, outputIframe = {};
+var outputContainer, outputIframe = {}, outputServer = {};
 myLayout.registerComponent('output', function( container, componentState ){
 	var name = componentState.name || "";
 	var src = componentState.src || ""; delete componentState["src"];
@@ -436,7 +456,7 @@ myLayout.registerComponent('output', function( container, componentState ){
     container.getElement()[0].append(ifr);
 	container.setTitle("Output "+name);
 	ifr.addEventListener('load',function(){
-		container.setTitle("Output "+name+" ("+(new URL(ifr.src)).host+")");
+		container.setTitle("Output "+name+" ("+outputServer[name]+")");
 		container.parent.parent.setActiveContentItem(container.parent);
 	});
 });
@@ -445,11 +465,12 @@ myLayout.inited = false;
 async function saveLayout() {if (myLayout.inited) localStorage.setItem('dqweb.layout',JSON.stringify(myLayout.toConfig()));};
 myLayout.on('initialised',function(){myLayout.inited = true;});
 myLayout.on('stateChanged', saveLayout);
-CodeMirror.registerHelper("hintWords","q",("//@SERVER,//@TITLE,//@WARN,//@FILE,//@OUTPUT,//@URL,//@TRAP,"+dqweb.qwords).split(','));
+CodeMirror.registerHelper("hintWords","q",("//@SERVER,//@TITLE,//@WARN,//@FILE,//@OUTPUT,//@URL,//@TRAP,//@ONCE,//@PROXY,"+dqweb.qwords).split(','));
 $(window).resize(function () {myLayout.updateSize($(window).width()-9, $(window).height()-34);});
 myLayout.createDragSource(document.getElementById("new"),   {type: 'component', componentName: 'code', componentState: { index:  0}});
 myLayout.createDragSource(document.getElementById("closed"),{type: 'component', componentName: 'code', componentState: { index: -1}});
 myLayout.createDragSource(document.getElementById("shared"),{type: 'component', componentName: 'code', componentState: { index: -2}});
+myLayout.createDragSource(document.getElementById("demo"),  {type: 'component', componentName: 'code', title:"Demo", componentState: {title:'Demo',code:dqweb.demo}});
 myLayout.createDragSource(document.getElementById("help"),  {type: 'component', componentName: 'help', title:"Help", componentState: {}});
 
 var alreadyOpen = false;
