@@ -1,5 +1,5 @@
 ﻿<head>
-<title>DQWEB v0.5</title>
+<title>DQWEB v0.7</title>
 <link rel="stylesheet" href="cm/lib/codemirror.css"/>
 <link rel="stylesheet" href="cm/theme/eclipse.css"/>
 <script src="dqweb.settings.js"></script>
@@ -23,7 +23,7 @@
 </head>
 <body>
 <div id="menubar" style="font-family: monospace; display:none; position: relative; overflow: hidden;">
-<span><b>DQWEB v0.5</b> |</span>
+<span><b>DQWEB v0.7</b> |</span>
 <span><a id="new" alt="Drag&Drop" title="Drag and drop this to open new code editor" href="#">NEW</a> |</span>
 <span id="menuCL" style="display:none"><a id="closed" ondblclick="emptyTrash()" title="Drag and drop this to restore the last closed editor" href="#">TRASH</a> |</span>
 <span id="menuSH" style="display:none"><a id="shared" title="Drag and drop this to open shared code" href="#">SHARED</a> |</span>
@@ -38,34 +38,37 @@
 <div id="hidden" style="visibility: hidden; width:0px; height: 0px"></div>
 <dialog id="importSession"><input type="file" id="inputFile"/> <input type="button" value="Import All" onclick="importSession(1)"/> <input type="button" value="Import Code"  onclick="importSession(0)"/></dialog>
 <template id='helpText'>
-	<h2>Help</h2>
+	<h1>Help</h1>
+	<h2>The basics</h2>
 	All your code and your layout are persisted in the browser's local storage.<br/>
-	You can always close this page, re-open and continue where you left off.
+	You can always close DQWEB, re-open and continue where you left off.
 	<h3>Drag & Drop</h3>
 	You can re-arrange your panels by drag & drop. 
-	You can also drag and drop items from the menu bar to create new panels.
+	You can also drag and drop items from the menu bar no the top to create new panels.
 	<ul>
 		<li>NEW: create new kdb+/q code editor.</li>
 		<li>TRASH: restore (up tp <span id="trash_size">10</span>) closed code editors. Double-click to empty trash.</li>
 		<li>SHARE: open shared code.</li>
+		<li>DEMO: open demo code.</li>
 		<li>HELP: open help page.</li>
 	</ul>
 	<h3>Code editor</h3>
 	<h4>//@SERVER [user@]host:port [comments]</h4>
-	Add this comment to set the target of execution. 
+	Add this comment to set the target server of execution. 
 	Everything after the address string is ignored, so you can add any comments there.<br/>
 	The setting only takes effect below the comment. 
-	You can work with multiple hosts in the same document by adding multiple //@SERVER comments.<br/>
+	You can work with multiple servers in the same document by adding multiple //@SERVER comments.<br/>
 	The default server is <span id="default_server">...</span>.<br/>
-	Press Ctrl+Enter after "//@SERVER " to get hints collected from all the open editors with the longest comment. 
-	<h4>Ctrl+Enter / Alt+Enter</h4>
+	Press Ctrl+Enter after "//@SERVER " to get hints collected from all the open editors with the longest comment.
+	<h4>//@ONCE [user@]host:port [comments]</h4>
+	Similar to //@SERVER, but only specifies the target server for the query right below the comment.
+	<h4>Ctrl+Enter</h4>
 	Press Ctrl+Enter to execute current line or selected code and show results in Output. Works with multiple lines too.<br/>
-	If you host DQWEB from your targer q server (see start.q), you can press Alt+Enter to inline the results in comments below the executed code.
 	<h4>//@TITLE title</h4>Add this comment and execute (Ctrl+Enter) to set the title of your code editor.
 	<h4>//@WARN message</h4>Add this comment right above your query to show a warning message before execution.
 	<h4>//@FILE filename [comments]</h4>Add this comment right above your query to download the results into a file (like .csv,.xls etc...).
 	<h4>//@TRAP [comments]</h4>Add this comment right above your query to execute with exteded trap, i.e. you will get the stack trace of errors.
-	<h4>//@OUTPUT [name]</h4>Add this comment to set the target output window for queries or urls below the comment. 
+	<h4>//@OUTPUT [name]</h4>Add this comment to set the target output window for queries or urls below the comment. The defult is empty sting.
 	<h4>//@URL url [comments]</h4>Add this comment and execute (Ctrl+Enter) to open url in the target output window.
 	<h4>//@MAC name definition</h4>Macros provide a non-intrusive way of defining q values (function or data) on the clint side. If the "name" macro is defined in any of the q editors the "!!name" string is replaced with its definition before execution. Macros can be nested. Warnings are shown for duplicate definitions on execution.
 	<h4>Ctrl+Space</h4>
@@ -74,10 +77,19 @@
 	Copies a link to the clipboard that encodes the code editor's title and code and can be sent to others. The target DQWEB instance is <span id="share_url">...</span>.
 	<h3>Export</h3>Export all your code and layout to JSON. Simply click "EXPORT" + "Ok" for quick timestamped export.
 	<h3>Import</h3>Click "IMPORT" to import (i.e. replace) your code and layout from JSON or keep everything and only import code (it will show up in SHARED).
-	<h3>Credits</h3>
+	<h2>Advanced</h2>
+	<h4>Hosting DQWEB from Q</h4>
+	Use start.q to host DQWEB from Q. The default port is .dqweb.port (5000).
+	<h4>//@PROXY</h4>
+	When you host DQWEB from Q, you can specify the same host:port as a proxy for other Q processes. DQWEB will call ".dqweb.h[server] message" to execute your command, where server is the string you specified at @SERVER or @ONCE and .dqweb.h returns an integer connection handle. The default impl caches connection handles and returns an error if can't connect for one second.
+	<h4>Alt+Enter</h4>
+	If you host DQWEB from Q and PROXY or SERVER is pointing to this server, you can press Alt+Enter to execute queries and the results will be inlined below the executed code. This is somewhat similar to executing code in Jupyter notebooks, except that repeated execution will not remove previous results.
+	<h4>dqweb.settings.js</h4>
+	You can change some settings here, like default server, trash size, q keywords for code completion, the default code for new code editors and the demo code.
+	<h2>Credits</h2>
 	You downloaded this from <a href="https://github.com/adotsch/dqweb" target="_blank">GitHub</a> for free, or you use it from <a href="https://adotsch.github.io/dqweb/index.html" target="_blank">github.io</a>. Use it at your own risk, I provide no support.
 	<ul>
-		<li><b>Internet people:</b> You can do amazing things with modern browsers in 200 lines of code. Thanks for that!</li>
+		<li><b>Internet people:</b> You can do amazing things with modern browsers in 300 lines of code. Thanks for that!</li>
 		<li><b>Coding & copy-pasting:</b> <a href="https://www.linkedin.com/in/dotsch/" target="_blank">András Dőtsch</a></li>
 		<li><b>JS libs:</b> <a href="http://golden-layout.com/" target="_blank">Golden Layout</a>, 
 		<a href="https://codemirror.net/" target="_blank">CodeMirror</a>, 
@@ -97,7 +109,7 @@ var defaultLayout = {
                     type: 'row', height: 65,
                     content: [
 						{ type: 'component', componentName: 'code', componentState: { index: 1 } },
-						{ type: 'component', componentName: 'code', componentState: { index: 2, title:'Demo', code: dqweb.demo } },
+						{ type: 'component', componentName: 'code', componentState: { index: 2, title:'Demo', code: dqweb.demoCode } },
 						{ type: 'component', componentName: 'help', title: 'Help', componentState: {} }
                     ]
                 }, {
@@ -402,7 +414,7 @@ myLayout.registerComponent('code', function( container, state ) {
 	container.setState(state);
 	container.setTitle(state.title);
 	var id = "dqweb.code"+state.index;
-	var c = migrateCode(newData.code || localStorage.getItem(id) || "//@TITLE ...\n//@SERVER ...");
+	var c = migrateCode(newData.code || localStorage.getItem(id) || dqweb.defaultCode);
 	localStorage.setItem(id,c);
 	var initFn = function(){
 		var editor = CodeMirror(container.getElement()[0], {
@@ -470,7 +482,7 @@ $(window).resize(function () {myLayout.updateSize($(window).width()-9, $(window)
 myLayout.createDragSource(document.getElementById("new"),   {type: 'component', componentName: 'code', componentState: { index:  0}});
 myLayout.createDragSource(document.getElementById("closed"),{type: 'component', componentName: 'code', componentState: { index: -1}});
 myLayout.createDragSource(document.getElementById("shared"),{type: 'component', componentName: 'code', componentState: { index: -2}});
-myLayout.createDragSource(document.getElementById("demo"),  {type: 'component', componentName: 'code', title:"Demo", componentState: {title:'Demo',code:dqweb.demo}});
+myLayout.createDragSource(document.getElementById("demo"),  {type: 'component', componentName: 'code', title:"Demo", componentState: {title:'Demo',code:dqweb.demoCode}});
 myLayout.createDragSource(document.getElementById("help"),  {type: 'component', componentName: 'help', title:"Help", componentState: {}});
 
 var alreadyOpen = false;
