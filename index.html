@@ -47,12 +47,13 @@
 	You can also drag and drop items from the menu bar no the top to create new panels.
 	<ul>
 		<li>NEW: create new kdb+/q code editor.</li>
-		<li>TRASH: restore (up tp <span id="trash_size">10</span>) closed code editors. Double-click to empty trash.</li>
+		<li>TRASH: restore (up to <span id="trash_size">10</span>) closed code editors. Double-click to empty trash.</li>
 		<li>SHARE: open shared code.</li>
 		<li>DEMO: open demo code.</li>
 		<li>HELP: open help page.</li>
 	</ul>
 	<h3>Code editor</h3>
+	In DQWEB some comments do something. There are executable commands (TITLE, URL), directives that are effective below the comment (SERVER, OUTPUT, PROXY) and one-shot directives that only take effect right below the comment (ONCE, WARN, FILE, TRAP) and there is one that defines global macros (MAC).
 	<h4>//@SERVER [user@]host:port [comments]</h4>
 	Add this comment to set the target server of execution. 
 	Everything after the address string is ignored, so you can add any comments there.<br/>
@@ -74,12 +75,12 @@
 	<h4>Ctrl+Space</h4>
 	Code completion for standard q keywords longer than 3 characters and the .Q namespace.
 	<h4>Ctrl+s</h4>
-	Copies a link to the clipboard that encodes the code editor's title and code and can be sent to others. The target DQWEB instance is <span id="share_url">...</span>.
+	Copies a link to the clipboard that encodes the code editor's title and code and can be sent to others. The DQWEB share ULR is <span id="share_url">...</span>).
 	<h3>Export</h3>Export all your code and layout to JSON. Simply click "EXPORT" + "Ok" for quick timestamped export.
 	<h3>Import</h3>Click "IMPORT" to import (i.e. replace) your code and layout from JSON or keep everything and only import code (it will show up in SHARED).
 	<h2>Advanced</h2>
 	<h4>Hosting DQWEB from Q</h4>
-	Use start.q to host DQWEB from Q. The default port is .dqweb.port (5000).
+	Use start.q to host DQWEB from Q and start the DQWEB Proxy.<br/>
 	<h4>//@PROXY</h4>
 	When you host DQWEB from Q, you can specify the same host:port as a proxy for other Q processes. DQWEB will call ".dqweb.h[server] message" to execute your command, where server is the string you specified at @SERVER or @ONCE and .dqweb.h returns an integer connection handle. The default impl caches connection handles and returns an error if can't connect for one second.
 	<h4>Alt+Enter</h4>
