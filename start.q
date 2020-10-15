@@ -1,8 +1,6 @@
 //http server
-.dqweb.port:5000
 .h.HOME:"."
-if[not system"p";system"p ",string .dqweb.port]
--1 "Open http://localhost:",(string system "p"),"/index.html or http://",string[.z.h],":",(string system"p"),"/index.html";
+if[not system"p";system"p 5000"]
 
 //proxy
 .dqweb.timeout:1000;
@@ -13,3 +11,8 @@ if[not system"p";system"p ",string .dqweb.port]
 	$[null h;'"Couldn't connect to ",s;.dqweb.con[s]:h]
  };
 .z.pc:{.dqweb.con:(where .dqweb.con<>x)#.dqweb.con};
+
+{[]
+	-1 "Open http://",(s1:"localhost:",p),"/index.html or http://",(s2:string[.z.h],":",p:string system"p"),"/index.html";
+	-1 "Use //@PROXY ",s1," or //@PROXY ",s2;
+ }[]
