@@ -1,517 +1,1131 @@
-﻿<head>
-<title>DQWEB</title>
-<link rel="stylesheet" href="cm/lib/codemirror.css"/>
-<link rel="stylesheet" href="cm/theme/eclipse.css"/>
-<script src="dqweb.settings.js"></script>
-<script src="cm/lib/codemirror.js"></script>
-<script src="cm/addon/edit/matchbrackets.js"></script>
-<script src="cm/addon/selection/active-line.js"></script>
-<script src="cm/addon/hint/show-hint.js"></script>
-<script src="cm/addon/search/search.js"></script>
-<script src="cm/addon/search/searchcursor.js"></script>
-<script src="cm/addon/dialog/dialog.js"></script>
-<script src="cm/mode/q/q.js"></script>
-<script type="text/javascript" src="jq/jquery-1.11.1.min.js"></script>
-<script type="text/javascript" src="gl/js/goldenlayout.min.js"></script>
-<script type="text/javascript" src="lz/lz-string.js"></script>
-<script type="text/javascript" src="fs/FileSaver.js"></script>
-<link type="text/css" rel="stylesheet" href="gl/css/goldenlayout-base.css" />
-<link type="text/css" rel="stylesheet" href="gl/css/goldenlayout-light-theme.css" />
-<link type="text/css" rel="stylesheet" href="cm/addon/hint/show-hint.css"/>
-<link type="text/css" rel="stylesheet" href="cm/addon/dialog/dialog.css"/>
-<link rel="icon" href="favicon.ico"/>
+<head>
+	<title>DQWEB | Modern kdb+/q Web IDE</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description"
+		content="DQWEB - A powerful, lightweight, and modern web-based IDE for kdb+/q. Features include persistent layouts, syntax highlighting, and code sharing.">
+	<meta name="keywords" content="kdb, q, ide, web ide, database, time series, data science">
+	<meta name="author" content="András Dőtsch">
+	<meta property="og:title" content="DQWEB | Modern kdb+/q Web IDE">
+	<meta property="og:description" content="Lightweight and powerful web-based IDE for kdb+/q processes.">
+	<meta property="og:type" content="website">
+	<link rel="stylesheet" href="cm/lib/codemirror.css" />
+	<link rel="stylesheet" href="cm/theme/eclipse.css" />
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap"
+		rel="stylesheet">
+	<script src="dqweb.settings.js"></script>
+	<script src="cm/lib/codemirror.js"></script>
+	<script src="cm/addon/edit/matchbrackets.js"></script>
+	<script src="cm/addon/selection/active-line.js"></script>
+	<script src="cm/addon/hint/show-hint.js"></script>
+	<script src="cm/addon/search/search.js"></script>
+	<script src="cm/addon/search/searchcursor.js"></script>
+	<script src="cm/addon/dialog/dialog.js"></script>
+	<script src="cm/mode/q/q.js"></script>
+	<script type="text/javascript" src="jq/jquery-1.11.1.min.js"></script>
+	<script type="text/javascript" src="gl/js/goldenlayout.min.js"></script>
+	<script type="text/javascript" src="lz/lz-string.js"></script>
+	<script type="text/javascript" src="fs/FileSaver.js"></script>
+	<link type="text/css" rel="stylesheet" href="gl/css/goldenlayout-base.css" />
+	<link type="text/css" rel="stylesheet" href="gl/css/goldenlayout-light-theme.css" />
+	<link type="text/css" rel="stylesheet" href="cm/addon/hint/show-hint.css" />
+	<link type="text/css" rel="stylesheet" href="cm/addon/dialog/dialog.css" />
+	<link rel="icon" href="favicon.ico" />
+	<style>
+		:root {
+			--bg-color: #f8fafc;
+			--text-color: #1e293b;
+			--accent-color: #3b82f6;
+			--accent-hover: #2563eb;
+			--menu-bg: rgba(255, 255, 255, 0.8);
+			--menu-text: #64748b;
+			--menu-border: rgba(226, 232, 240, 0.8);
+			--shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+			--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+			--radius-md: 0.5rem;
+			--radius-lg: 1rem;
+			--menu-hover-bg: #f1f5f9;
+			--logo-color: var(--accent-color);
+		}
+
+		body.dark-mode {
+			--bg-color: #1e1e1e;
+			--text-color: #cccccc;
+			--accent-color: #007acc;
+			--accent-hover: #0098ff;
+			--menu-bg: rgba(37, 37, 38, 0.95);
+			--menu-text: #969696;
+			--menu-border: #3c3c3c;
+			--menu-hover-bg: #3e3e42;
+			--logo-color: #4fc1ff;
+		}
+
+		body {
+			font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+			background-color: var(--bg-color);
+			color: var(--text-color);
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+		}
+
+		#menubar {
+			display: flex;
+			align-items: center;
+			padding: 0.5rem 1rem;
+			background: var(--menu-bg);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			border-bottom: 1px solid var(--menu-border);
+			box-shadow: var(--shadow-sm);
+			z-index: 100;
+			gap: 0.75rem;
+			height: 48px;
+			box-sizing: border-box;
+		}
+
+		#menubar b {
+			font-weight: 600;
+			color: var(--logo-color, var(--accent-color));
+			font-size: 0.9rem;
+			margin-right: 0.5rem;
+		}
+
+		#menubar span {
+			display: flex;
+			align-items: center;
+			color: #cbd5e1;
+		}
+
+		#menubar a {
+			text-decoration: none;
+			color: var(--menu-text);
+			font-size: 0.85rem;
+			font-weight: 500;
+			padding: 0.35rem 0.65rem;
+			border-radius: 0.375rem;
+			transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+			white-space: nowrap;
+		}
+
+		#menubar a:hover {
+			background-color: var(--menu-hover-bg, #f1f5f9);
+			color: var(--accent-hover);
+		}
+
+		/* Draggable indicators */
+		#new,
+		#closed,
+		#shared,
+		#demo,
+		#help {
+			cursor: grab !important;
+		}
+
+		#new:active,
+		#closed:active,
+		#shared:active,
+		#demo:active,
+		#help:active {
+			cursor: grabbing !important;
+		}
+
+		#layoutContainer {
+			position: absolute;
+			top: 48px;
+			left: 0;
+			width: 100% !important;
+			height: calc(100% - 48px) !important;
+		}
+
+		#pleaseClose {
+			position: fixed;
+			inset: 0;
+			background: rgba(15, 23, 42, 0.8);
+			backdrop-filter: blur(8px);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			z-index: 9999;
+		}
+
+		#pleaseClose h3 {
+			background: white;
+			padding: 2.5rem;
+			border-radius: var(--radius-lg);
+			box-shadow: var(--shadow-md);
+			color: #e11d48;
+			max-width: 400px;
+			text-align: center;
+			margin: 1rem;
+			font-weight: 600;
+			line-height: 1.5;
+		}
+
+		dialog {
+			border: none;
+			padding: 1.5rem;
+			border-radius: var(--radius-lg);
+			box-shadow: var(--shadow-md);
+			background: white;
+			max-width: 400px;
+			width: 100%;
+		}
+
+		dialog::backdrop {
+			background: rgba(15, 23, 42, 0.5);
+			backdrop-filter: blur(4px);
+		}
+
+		input[type="button"] {
+			background: var(--accent-color);
+			color: white;
+			border: none;
+			padding: 0.5rem 1rem;
+			border-radius: var(--radius-md);
+			font-weight: 500;
+			cursor: pointer;
+			transition: background 0.2s;
+			margin: 0.25rem;
+		}
+
+		input[type="button"]:hover {
+			background: var(--accent-hover);
+		}
+
+		input[type="file"] {
+			display: block;
+			width: 100%;
+			margin-bottom: 1rem;
+			font-size: 0.875rem;
+			color: #64748b;
+		}
+
+		/* GoldenLayout Overrides */
+		.lm_header {
+			background: #f1f5f9 !important;
+		}
+
+		.lm_tab {
+			background: #f1f5f9 !important;
+			border-radius: 6px 6px 0 0 !important;
+			margin-right: 2px !important;
+		}
+
+		.lm_tab.lm_active {
+			background: white !important;
+		}
+
+		.lm_content {
+			background: white !important;
+		}
+
+		/* CodeMirror Overrides */
+		.CodeMirror {
+			font-family: 'JetBrains Mono', monospace !important;
+			font-size: 13px !important;
+		}
+
+		body.dark-mode .CodeMirror {
+			background: #1e1e1e !important;
+			color: #d4d4d4 !important;
+		}
+
+		body.dark-mode .CodeMirror-gutters {
+			background: #1e1e1e !important;
+			border-right: 1px solid #3c3c3c !important;
+		}
+
+		body.dark-mode .CodeMirror-linenumber {
+			color: #858585 !important;
+		}
+
+		body.dark-mode .CodeMirror-cursor {
+			border-left: 2px solid #aeafad !important;
+		}
+
+		body.dark-mode .CodeMirror-activeline-background {
+			background: rgba(255, 255, 255, 0.05) !important;
+		}
+
+		/* Dark Mode Syntax Highlights (VS Code Style) */
+		body.dark-mode .cm-comment {
+			color: #6a9955 !important;
+		}
+
+		body.dark-mode .cm-string {
+			color: #ce9178 !important;
+		}
+
+		body.dark-mode .cm-keyword {
+			color: #569cd6 !important;
+		}
+
+		body.dark-mode .cm-number {
+			color: #b5cea8 !important;
+		}
+
+		body.dark-mode .cm-atom {
+			color: #4fc1ff !important;
+		}
+
+		body.dark-mode .cm-variable {
+			color: #9cdcfe !important;
+		}
+
+		body.dark-mode .cm-variable-2 {
+			color: #4ec9b0 !important;
+		}
+
+		body.dark-mode .cm-property {
+			color: #9cdcfe !important;
+		}
+
+		body.dark-mode .cm-operator {
+			color: #d4d4d4 !important;
+		}
+
+		body.dark-mode .cm-meta {
+			color: #c586c0 !important;
+		}
+
+		body.dark-mode .cm-bracket {
+			color: #d4d4d4 !important;
+		}
+
+		body.dark-mode .cm-header {
+			color: #569cd6 !important;
+		}
+
+		body.dark-mode .cm-link {
+			color: #4fc1ff !important;
+		}
+
+		body.dark-mode .cm-error {
+			color: #f44747 !important;
+		}
+
+		/* Dark Mode Toggle Switch */
+		.theme-switch-wrapper {
+			display: flex;
+			align-items: center;
+			margin-left: auto;
+			gap: 0.5rem;
+			font-size: 0.75rem;
+			font-weight: 600;
+			color: #1e293b;
+		}
+
+		.theme-switch {
+			display: inline-block;
+			height: 18px;
+			position: relative;
+			width: 36px;
+		}
+
+		.theme-switch input {
+			display: none;
+		}
+
+		.slider {
+			background-color: #94a3b8;
+			bottom: 0;
+			cursor: pointer;
+			left: 0;
+			position: absolute;
+			right: 0;
+			top: 0;
+			transition: .4s;
+			border-radius: 34px;
+		}
+
+		input:checked+.slider {
+			background-color: #007acc;
+		}
+
+		.slider:before {
+			background-color: #fff;
+			bottom: 2px;
+			content: "";
+			height: 14px;
+			left: 2px;
+			position: absolute;
+			transition: .4s;
+			width: 14px;
+			border-radius: 50%;
+			z-index: 2;
+			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+		}
+
+		input:checked+.slider:before {
+			transform: translateX(18px);
+		}
+
+		body.dark-mode .lm_header {
+			background: #252526 !important;
+		}
+
+		body.dark-mode .lm_tab {
+			background: #2d2d2d !important;
+			color: #969696 !important;
+			border-bottom: 1px solid #3c3c3c !important;
+		}
+
+		body.dark-mode .lm_tab.lm_active {
+			background: #1e1e1e !important;
+			color: #ffffff !important;
+			border-bottom: 1px solid #1e1e1e !important;
+		}
+
+		body.dark-mode .lm_content {
+			background: #1e1e1e !important;
+		}
+
+		/* Darkify Output Iframes */
+		body.dark-mode iframe {
+			filter: invert(0.9) hue-rotate(180deg) brightness(1.1) contrast(0.9);
+			background: #fff;
+			/* Ensure filter has a base to work on */
+		}
+
+		body.dark-mode .theme-switch-wrapper {
+			color: var(--menu-text);
+		}
+
+		/* GoldenLayout Dark Mode Controls */
+		body.dark-mode .lm_close,
+		body.dark-mode .lm_close_tab,
+		body.dark-mode .lm_maximise,
+		body.dark-mode .lm_popout,
+		body.dark-mode .lm_tab .lm_close_tab {
+			filter: invert(1) brightness(2) !important;
+			opacity: 0.7;
+			transition: opacity 0.2s;
+		}
+
+		body.dark-mode .lm_close:hover,
+		body.dark-mode .lm_close_tab:hover,
+		body.dark-mode .lm_maximise:hover,
+		body.dark-mode .lm_popout:hover,
+		body.dark-mode .lm_tab .lm_close_tab:hover {
+			opacity: 1;
+		}
+
+		body.dark-mode dialog {
+			background: #1e293b !important;
+			color: #f1f5f9 !important;
+			border: 1px solid #334155 !important;
+		}
+
+		/* Help Documentation Styling */
+		.help-text-container {
+			padding: 1.5rem;
+			max-width: 900px;
+			margin: 0 auto;
+			line-height: 1.6;
+			color: #475569;
+			font-family: 'Inter', sans-serif;
+			font-size: 14px;
+		}
+
+		.help-text-container h1 {
+			color: var(--accent-color);
+			font-size: 2rem;
+			margin-bottom: 1.5rem;
+			border-bottom: 2px solid #f1f5f9;
+			padding-bottom: 0.5rem;
+			font-weight: 700;
+		}
+
+		.help-text-container h2 {
+			font-size: 1.4rem;
+			color: #1e293b;
+			margin-top: 2.25rem;
+			margin-bottom: 0.85rem;
+			border-left: 3px solid var(--accent-color);
+			padding-left: 0.85rem;
+			font-weight: 600;
+		}
+
+		.help-text-container h3 {
+			font-size: 1.15rem;
+			color: #1e293b;
+			margin-top: 1.75rem;
+			margin-bottom: 0.6rem;
+			font-weight: 600;
+		}
+
+		.help-text-container h4 {
+			font-size: 13px;
+			color: #1e293b;
+			margin-top: 1.5rem;
+			margin-bottom: 0.6rem;
+			font-family: 'JetBrains Mono', monospace;
+			background: #f1f5f9;
+			padding: 0.4rem 0.75rem;
+			border-radius: 0.375rem;
+			display: block;
+			font-weight: 600;
+			width: fit-content;
+		}
+
+		.help-text-container a {
+			color: var(--accent-color);
+			text-decoration: none;
+			font-weight: 500;
+			transition: all 0.2s;
+			border-bottom: 1px solid transparent;
+		}
+
+		.help-text-container a:hover {
+			color: var(--accent-hover);
+			border-bottom-color: var(--accent-hover);
+		}
+
+		.help-text-container ul {
+			padding-left: 1.5rem;
+			margin-bottom: 1.5rem;
+		}
+
+		.help-text-container li {
+			margin-bottom: 0.5rem;
+		}
+
+		.help-text-container code {
+			font-family: 'JetBrains Mono', monospace;
+			background: #f8fafc;
+			padding: 0.2rem 0.4rem;
+			border-radius: 0.25rem;
+			font-size: 13px;
+			color: var(--accent-color);
+			border: 1px solid #e2e8f0;
+		}
+
+		body.dark-mode .help-text-container {
+			color: #94a3b8;
+		}
+
+		body.dark-mode .help-text-container h2 {
+			color: #f1f5f9;
+			border-left-color: var(--accent-color);
+		}
+
+		body.dark-mode .help-text-container h3 {
+			color: #e2e8f0;
+		}
+
+		body.dark-mode .help-text-container h4 {
+			color: #f1f5f9;
+			background: #1e293b;
+			box-shadow: none;
+		}
+
+		body.dark-mode .help-text-container code {
+			background: #1e293b;
+			color: #60a5fa;
+			border: 1px solid #334155;
+		}
+
+		body.dark-mode .help-text-container h1 {
+			border-bottom-color: #334155;
+		}
+
+		body.dark-mode .help-text-container a {
+			color: #60a5fa;
+		}
+
+		body.dark-mode .help-text-container a:hover {
+			color: #93c5fd;
+			border-bottom-color: #93c5fd;
+		}
+	</style>
 </head>
-<body>
-<div id="menubar" style="font-family: monospace; display:none; position: relative; overflow: hidden;">
-<span><b>DQWEB v0.7</b> |</span>
-<span><a id="new" alt="Drag&Drop" title="Drag and drop this to open new code editor" href="#">NEW</a> |</span>
-<span id="menuCL" style="display:none"><a id="closed" ondblclick="emptyTrash()" title="Drag and drop this to restore the last closed editor" href="#">TRASH</a> |</span>
-<span id="menuSH" style="display:none"><a id="shared" title="Drag and drop this to open shared code" href="#">SHARED</a> |</span>
-<span><a title="Import from JSON" href="#" onclick="document.getElementById('importSession').showModal()">IMPORT</a> |</span>
-<span><a title="Export from JSON" href="#" onclick="exportSession()">EXPORT</a> |</span>
-<span><a id="demo" title="Demo" href="#">DEMO</a> |</span>
-<span><a id="help" title="Drag and drop this to open help page" href="#">HELP</a></span>
-</div>
-<div id="layoutContainer" style="position:absolute; top: 30; left: 3; width: calc(100% - 9px); height: calc(100% - 34px)"></div>
-<div id="pleaseClose" style="display:none"><h3>Another instance of DQWEB is already open. Please close this tab/window!</h3></div>
-<div id="loaders" style="visibility: hidden; width:0px; height: 0px"></div>
-<div id="hidden" style="visibility: hidden; width:0px; height: 0px"></div>
-<dialog id="importSession"><input type="file" id="inputFile"/> <input type="button" value="Import All" onclick="importSession(1)"/> <input type="button" value="Import Code"  onclick="importSession(0)"/></dialog>
-<template id='helpText'>
-	<h1>Help</h1>
-	<h2>The basics</h2>
-	All your code and your layout are persisted in the browser's local storage.<br/>
-	You can always close DQWEB, re-open and continue where you left off.
-	<h3>Drag & Drop</h3>
-	You can re-arrange your panels by drag & drop. 
-	You can also drag and drop items from the menu bar no the top to create new panels.
-	<ul>
-		<li>NEW: create new kdb+/q code editor.</li>
-		<li>TRASH: restore (up to <span id="trash_size">10</span>) closed code editors. Double-click to empty trash.</li>
-		<li>SHARE: open shared code.</li>
-		<li>DEMO: open demo code.</li>
-		<li>HELP: open help page.</li>
-	</ul>
-	<h3>Code editor</h3>
-	In DQWEB some comments do something. There are executable commands (TITLE, URL), directives that are effective below the comment (SERVER, OUTPUT, PROXY) and one-shot directives that only take effect right below the comment (ONCE, WARN, FILE, TRAP) and there is one that defines global macros (MAC).
-	<h4>//@SERVER [user@]host:port [comments]</h4>
-	Add this comment to set the target server of execution. 
-	Everything after the address string is ignored, so you can add any comments there.<br/>
-	The setting only takes effect below the comment. 
-	You can work with multiple servers in the same document by adding multiple //@SERVER comments.<br/>
-	The default server is <span id="default_server">...</span>.<br/>
-	Press Ctrl+Enter after "//@SERVER " to get hints collected from all the open editors with the longest comment.
-	<h4>//@ONCE [user@]host:port [comments]</h4>
-	Similar to //@SERVER, but only specifies the target server for the query right below the comment.
-	<h4>Ctrl+Enter</h4>
-	Press Ctrl+Enter to execute current line or selected code and show results in Output. Works with multiple lines too.<br/>
-	<h4>//@TITLE title</h4>Add this comment and execute (Ctrl+Enter) to set the title of your code editor.
-	<h4>//@WARN message</h4>Add this comment right above your query to show a warning message before execution.
-	<h4>//@FILE filename [comments]</h4>Add this comment right above your query to download the results into a file (like .csv,.xls etc...).
-	<h4>//@TRAP [comments]</h4>Add this comment right above your query to execute with exteded trap, i.e. you will get the stack trace of errors.
-	<h4>//@OUTPUT [name]</h4>Add this comment to set the target output window for queries or urls below the comment. The defult is empty sting.
-	<h4>//@URL url [comments]</h4>Add this comment and execute (Ctrl+Enter) to open url in the target output window.
-	<h4>//@MAC name definition</h4>Macros provide a non-intrusive way of defining q values (function or data) on the clint side. If the "name" macro is defined in any of the q editors the "!!name" string is replaced with its definition before execution. Macros can be nested. Warnings are shown for duplicate definitions on execution.
-	<h4>Ctrl+Space</h4>
-	Code completion for standard q keywords longer than 3 characters and the .Q namespace.
-	<h4>Ctrl+s</h4>
-	Copies a link to the clipboard that encodes the code editor's title and code and can be sent to others. The DQWEB share ULR is <span id="share_url">...</span>.
-	<h3>Export</h3>Export all your code and layout to JSON. Simply click "EXPORT" + "Ok" for quick timestamped export.
-	<h3>Import</h3>Click "IMPORT" to import (i.e. replace) your code and layout from JSON or keep everything and only import code (it will show up in SHARED).
-	<h2>Advanced</h2>
-	<h4>Hosting DQWEB from Q</h4>
-	Use start.q to host DQWEB from Q and start the DQWEB Proxy.<br/>
-	<h4>//@PROXY</h4>
-	When you host DQWEB from Q, you can specify the same host:port as a proxy for other Q processes. DQWEB will call ".dqweb.h[server] message" to execute your command, where server is the string you specified at @SERVER or @ONCE and .dqweb.h returns an integer connection handle. The default impl caches connection handles and returns an error if can't connect for one second.
-	<h4>Alt+Enter</h4>
-	If you host DQWEB from Q and PROXY or SERVER is pointing to this server, you can press Alt+Enter to execute queries and the results will be inlined below the executed code. This is somewhat similar to executing code in Jupyter notebooks, except that repeated execution will not remove previous results.
-	<h4>dqweb.settings.js</h4>
-	You can change some settings here, like default server, trash size, q keywords for code completion, the default code for new code editors and the demo code.
-	<h2>Credits</h2>
-	You downloaded this from <a href="https://github.com/adotsch/dqweb" target="_blank">GitHub</a> for free, or you use it from <a href="https://adotsch.github.io/dqweb/index.html" target="_blank">github.io</a>. Use it at your own risk, I provide no support.
-	<ul>
-		<li><b>Internet people:</b> You can do amazing things with modern browsers in 300 lines of code. Thanks for that!</li>
-		<li><b>Coding & copy-pasting:</b> <a href="https://www.linkedin.com/in/dotsch/" target="_blank">András Dőtsch</a></li>
-		<li><b>JS libs:</b> <a href="https://jquery.com/" target="_blank">jQuery</a>, <a href="http://golden-layout.com/" target="_blank">Golden Layout</a>, 
-		<a href="https://codemirror.net/" target="_blank">CodeMirror</a>, 
-		<a href="https://github.com/pieroxy/lz-string" target="_blank">LZ-String</a>,
-		<a href="https://github.com/eligrey/FileSaver.js" target="_blank">FileSaver</a></li>
-		<li><b>Q syntax mode:</b> <a href="https://github.com/codemirror/CodeMirror/commits?author=CharlieSkelton-Kx" target="_blank">Charles Skelton</a></li>
-	</ul>'
-</template>
-<style>dialog::backdrop {background: rgba(128,128,128,.75);-webkit-filter: blur(2px);-moz-filter: blur(2px);-o-filter: blur(2px);-ms-filter: blur(2px);filter: blur(2px);-webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);}</style>
-<script>
-var defaultLayout = {
-    settings: { hasHeaders: true, showPopoutIcon: false, showMaximiseIcon: true },
-    dimensions: { borderWidth: 2},
-    content: [{
-            type: 'column',
-            content: [{
-                    type: 'row', height: 65,
-                    content: [
+
+<body class="dark-mode">
+	<div id="menubar" style="display:none;" role="toolbar" aria-label="Main Menu">
+		<b aria-label="App Name and Version">DQWEB v0.8</b>
+		<a id="new" title="Drag and drop this to open new code editor" href="#" role="button">NEW</a>
+		<span id="menuCL" style="display:none"><a id="closed" ondblclick="emptyTrash()"
+				title="Drag and drop this to restore the last closed editor" href="#" role="button">TRASH</a></span>
+		<span id="menuSH" style="display:none"><a id="shared" title="Drag and drop this to open shared code" href="#"
+				role="button">SHARED</a></span>
+		<a title="Import from JSON" href="#" onclick="document.getElementById('importSession').showModal()"
+			role="button">IMPORT</a>
+		<a title="Export from JSON" href="#" onclick="exportSession()" role="button">EXPORT</a>
+		<a id="demo" title="Demo" href="#" role="button">DEMO</a>
+		<a id="help" title="Drag and drop this to open help page" href="#" role="button">HELP</a>
+
+		<div class="theme-switch-wrapper">
+			<label class="theme-switch" for="checkbox">
+				<input type="checkbox" id="checkbox" checked onclick="toggleDarkMode()" />
+				<div class="slider round"></div>
+			</label>
+		</div>
+	</div>
+	<div id="layoutContainer" role="main"></div>
+	<div id="pleaseClose" style="display:none" role="alert">
+		<h3>Another instance of DQWEB is already open. Please close this tab/window!</h3>
+	</div>
+	<div id="loaders" style="visibility: hidden; width:0px; height: 0px" aria-hidden="true"></div>
+	<div id="hidden" style="visibility: hidden; width:0px; height: 0px" aria-hidden="true"></div>
+	<dialog id="importSession" aria-labelledby="import-title">
+		<h2 id="import-title" style="margin-top: 0; font-size: 1.25rem;">Import Session</h2>
+		<p style="color: #64748b; font-size: 0.875rem; margin-bottom: 1rem;">Select a JSON file to import your code and
+			layout.</p>
+		<input type="file" id="inputFile" aria-label="Choose JSON file" />
+		<div style="display: flex; justify-content: flex-end;">
+			<input type="button" value="Import Code" onclick="importSession(0)" />
+			<input type="button" value="Import All" onclick="importSession(1)" />
+		</div>
+	</dialog> <template id='helpText'>
+		<div class="help-text-container">
+			<h1>Help</h1>
+			<h2>The basics</h2>
+			All your code and your layout are persisted in the browser's local storage.<br />
+			You can always close DQWEB, re-open and continue where you left off.
+			<h3>Drag & Drop</h3>
+			You can re-arrange your panels by drag & drop.
+			You can also drag and drop items from the menu bar no the top to create new panels.
+			<ul>
+				<li>NEW: create new kdb+/q code editor.</li>
+				<li>TRASH: restore (up to <span id="trash_size">10</span>) closed code editors. Double-click to empty
+					trash.
+				</li>
+				<li>SHARE: open shared code.</li>
+				<li>DEMO: open demo code.</li>
+				<li>HELP: open help page.</li>
+			</ul>
+			<h3>Code editor</h3>
+			In DQWEB some comments do something. There are executable commands (TITLE, URL), directives that are
+			effective
+			below the comment (SERVER, OUTPUT, PROXY) and one-shot directives that only take effect right below the
+			comment
+			(ONCE, WARN, FILE, TRAP) and there is one that defines global macros (MAC).
+			<h4>//@SERVER [user@]host:port [comments]</h4>
+			Add this comment to set the target server of execution.
+			Everything after the address string is ignored, so you can add any comments there.<br />
+			The setting only takes effect below the comment.
+			You can work with multiple servers in the same document by adding multiple //@SERVER comments.<br />
+			The default server is <span id="default_server">...</span>.<br />
+			Press Ctrl+Enter after "//@SERVER " to get hints collected from all the open editors with the longest
+			comment.
+			<h4>//@ONCE [user@]host:port [comments]</h4>
+			Similar to //@SERVER, but only specifies the target server for the query right below the comment.
+			<h4>Ctrl+Enter</h4>
+			Press Ctrl+Enter to execute current line or selected code and show results in Output. Works with multiple
+			lines
+			too.<br />
+			<h4>//@TITLE title</h4>Add this comment and execute (Ctrl+Enter) to set the title of your code editor.
+			<h4>//@WARN message</h4>Add this comment right above your query to show a warning message before execution.
+			<h4>//@FILE filename [comments]</h4>Add this comment right above your query to download the results into a
+			file
+			(like .csv,.xls etc...).
+			<h4>//@TRAP [comments]</h4>Add this comment right above your query to execute with exteded trap, i.e. you
+			will
+			get the stack trace of errors.
+			<h4>//@OUTPUT [name]</h4>Add this comment to set the target output window for queries or urls below the
+			comment.
+			The defult is empty sting.
+			<h4>//@URL url [comments]</h4>Add this comment and execute (Ctrl+Enter) to open url in the target output
+			window.
+			<h4>//@MAC name definition</h4>Macros provide a non-intrusive way of defining q values (function or data) on
+			the
+			clint side. If the "name" macro is defined in any of the q editors the "!!name" string is replaced with its
+			definition before execution. Macros can be nested. Warnings are shown for duplicate definitions on
+			execution.
+			<h4>Ctrl+Space</h4>
+			Code completion for standard q keywords longer than 3 characters and the .Q namespace.
+			<h4>Ctrl+s</h4>
+			Copies a link to the clipboard that encodes the code editor's title and code and can be sent to others. The
+			DQWEB share ULR is <span id="share_url">...</span>.
+			<h3>Export</h3>Export all your code and layout to JSON. Simply click "EXPORT" + "Ok" for quick timestamped
+			export.
+			<h3>Import</h3>Click "IMPORT" to import (i.e. replace) your code and layout from JSON or keep everything and
+			only import code (it will show up in SHARED).
+			<h2>Advanced</h2>
+			<h4>Hosting DQWEB from Q</h4>
+			Use start.q to host DQWEB from Q and start the DQWEB Proxy.<br />
+			<h4>//@PROXY</h4>
+			When you host DQWEB from Q, you can specify the same host:port as a proxy for other Q processes. DQWEB will
+			call
+			".dqweb.h[server] message" to execute your command, where server is the string you specified at @SERVER or
+			@ONCE
+			and .dqweb.h returns an integer connection handle. The default impl caches connection handles and returns an
+			error if can't connect for one second.
+			<h4>Alt+Enter</h4>
+			If you host DQWEB from Q and PROXY or SERVER is pointing to this server, you can press Alt+Enter to execute
+			queries and the results will be inlined below the executed code. This is somewhat similar to executing code
+			in
+			Jupyter notebooks, except that repeated execution will not remove previous results.
+			<h4>dqweb.settings.js</h4>
+			You can change some settings here, like default server, trash size, q keywords for code completion, the
+			default
+			code for new code editors and the demo code.
+			<h2>Credits</h2>
+			You downloaded this from <a href="https://github.com/adotsch/dqweb" target="_blank">GitHub</a> for free, or
+			you
+			use it from <a href="https://adotsch.github.io/dqweb/index.html" target="_blank">github.io</a>. Use it at
+			your
+			own risk, I provide no support.
+			<ul>
+				<li><b>Internet people:</b> You can do amazing things with modern browsers in 300 lines of code. Thanks
+					for
+					that!</li>
+				<li><b>Coding & copy-pasting:</b> <a href="https://www.linkedin.com/in/dotsch/" target="_blank">András
+						Dőtsch</a></li>
+				<li><b>JS libs:</b> <a href="https://jquery.com/" target="_blank">jQuery</a>, <a
+						href="http://golden-layout.com/" target="_blank">Golden Layout</a>,
+					<a href="https://codemirror.net/" target="_blank">CodeMirror</a>,
+					<a href="https://github.com/pieroxy/lz-string" target="_blank">LZ-String</a>,
+					<a href="https://github.com/eligrey/FileSaver.js" target="_blank">FileSaver</a>
+				</li>
+				<li><b>Q syntax mode:</b> <a
+						href="https://github.com/codemirror/CodeMirror/commits?author=CharlieSkelton-Kx"
+						target="_blank">Charles Skelton</a></li>
+			</ul>
+		</div>
+	</template>
+	<script>
+		var defaultLayout = {
+			settings: { hasHeaders: true, showPopoutIcon: false, showMaximiseIcon: true },
+			labels: {
+				close: 'Close',
+				maximise: 'Maximize',
+				minimise: 'Minimize',
+				popout: 'Open in new window'
+			},
+			dimensions: { borderWidth: 2 },
+			content: [{
+				type: 'column',
+				content: [{
+					type: 'row', height: 65,
+					content: [
 						{ type: 'component', componentName: 'code', componentState: { index: 1 } },
-						{ type: 'component', componentName: 'code', componentState: { index: 2, title:'Demo', code: dqweb.demoCode } },
+						{ type: 'component', componentName: 'code', componentState: { index: 2, title: 'Demo', code: dqweb.demoCode } },
 						{ type: 'component', componentName: 'help', title: 'Help', componentState: {} }
-                    ]
-                }, {
-                    type: 'component', height: 35, isClosable: false, 
+					]
+				}, {
+					type: 'component', height: 35, isClosable: false,
 					componentName: 'output', title: "Output", componentState: {}
-                }
-            ]
-        }
-    ]
-};
-
-var maxIndex = 0;
-var savedLayout = JSON.parse(localStorage.getItem('dqweb.layout') || JSON.stringify(defaultLayout));
-savedLayout.settings.showMaximiseIcon = true;
-localStorage.setItem('dqweb.layout',JSON.stringify(savedLayout));
-var myLayout = new GoldenLayout(savedLayout,$('#layoutContainer'));//var myLayout = new GoldenLayout(savedLayout);
-
-var closedCode = JSON.parse(localStorage.getItem('dqweb.closed') || "[]");
-var sharedCode = JSON.parse(localStorage.getItem('dqweb.shared') || "[]");
-localStorage.setItem('dqweb.closed',JSON.stringify(closedCode));
-localStorage.setItem('dqweb.shared',JSON.stringify(sharedCode));
-
-CodeMirror.defaults.indentUnit=4;
-
-function emptyTrash() {
-	if (window.confirm("Do you really want to empty the trash?") && window.confirm ("Are you sure?")) {
-		closedCode = [];updateClosed();
-	}
-};
-
-function updateClosed() {
-	closedCode = closedCode.slice(0,dqweb.trashSize);
-	localStorage.setItem('dqweb.closed',JSON.stringify(closedCode));
-	$('#closed')[0].text='TRASH('+closedCode.length+')';
-	if (closedCode.length) $('#menuCL').fadeIn(); else $('#menuCL').fadeOut();
-};
-
-function updateShared() {
-	localStorage.setItem('dqweb.shared',JSON.stringify(sharedCode));
-	$('#shared')[0].text='SHARED('+sharedCode.length+')';
-	if (sharedCode.length) $('#menuSH').fadeIn(); else $('#menuSH').fadeOut();
-};
-
-function findServer(cm) { 
-	var n = cm.getCursor().line;
-	while (n-- >0) {
-		var line = cm.getLine(n).trimEnd().replace(/[\s]+/g," ").split(" ");
-		if (line.length>1 && line[0]=="//@SERVER" && line[1]!=="...") return line[1];
-	}
-	return dqweb.defaultServer;
-};
-
-function visitComps(layout,fn,x) {
-	if (layout.type=='component') fn(x,layout); else for (var l of layout.content) visitComps(l,fn,x); return x;
-}
-
-function exportableData() {
-	var lo = myLayout.toConfig();
-	var data = {layout:GoldenLayout.minifyConfig(lo),code:{}};
-	visitComps(lo,function(d,c){
-		if (c.componentName=='code') {
-			var id = 'dqweb.code'+c.componentState.index;
-			d.code[id] = {title:c.componentState.title,code:localStorage.getItem(id)};
-		}
-	},data);
-	return data;
-}
-
-function exportSession() {
-	var fn = window.prompt("File name","dqweb."+(new Date().toISOString()).substring(0,16).replace(/[-:]/g,".").replace("T","_"));
-	if (!fn.toLowerCase().endsWith(".json")) fn+=".json";
-	saveAs(new Blob([JSON.stringify(exportableData())],{type: "text/plain;charset=utf-8"}),fn);
-}
-
-function importSession(a) {
-	var f = document.getElementById('inputFile').files[0];
-	if (f) {
-		var fr = new FileReader();
-		fr.onload=function(){
-			var session = JSON.parse(fr.result);
-			if (a) {
-				if (window.confirm("Are you OK with replacing your code/layout?")) {
-					visitComps(myLayout.toConfig(),function(x,c){
-						if (c.componentName=='code') localStorage.removeItem('dqweb.code'+c.componentState.index);
-					},0);
-				} else {
-					document.getElementById('importSession').close();
-					return 0;
 				}
-				localStorage.setItem('dqweb.layout',JSON.stringify(GoldenLayout.unminifyConfig(session.layout)));
+				]
 			}
-			for (var id in session.code) {
-				if (a)
-					localStorage.setItem(id,session.code[id].code);
-				else
-					sharedCode.unshift(session.code[id]);
+			]
+		};
+
+		var maxIndex = 0;
+		var savedLayout = JSON.parse(localStorage.getItem('dqweb.layout') || JSON.stringify(defaultLayout));
+		savedLayout.settings.showMaximiseIcon = true;
+		savedLayout.labels = defaultLayout.labels;
+		localStorage.setItem('dqweb.layout', JSON.stringify(savedLayout));
+		var myLayout = new GoldenLayout(savedLayout, $('#layoutContainer'));//var myLayout = new GoldenLayout(savedLayout);
+
+		var closedCode = JSON.parse(localStorage.getItem('dqweb.closed') || "[]");
+		var sharedCode = JSON.parse(localStorage.getItem('dqweb.shared') || "[]");
+		localStorage.setItem('dqweb.closed', JSON.stringify(closedCode));
+		localStorage.setItem('dqweb.shared', JSON.stringify(sharedCode));
+
+		CodeMirror.defaults.indentUnit = 4;
+
+		function emptyTrash() {
+			if (window.confirm("Do you really want to empty the trash?") && window.confirm("Are you sure?")) {
+				closedCode = []; updateClosed();
 			}
-			localStorage.setItem('dqweb.shared',JSON.stringify(sharedCode));
-			window.location.reload();
+		};
+
+		function updateClosed() {
+			closedCode = closedCode.slice(0, dqweb.trashSize);
+			localStorage.setItem('dqweb.closed', JSON.stringify(closedCode));
+			$('#closed')[0].text = 'TRASH(' + closedCode.length + ')';
+			if (closedCode.length) $('#menuCL').fadeIn(); else $('#menuCL').fadeOut();
+		};
+
+		function updateShared() {
+			localStorage.setItem('dqweb.shared', JSON.stringify(sharedCode));
+			$('#shared')[0].text = 'SHARED(' + sharedCode.length + ')';
+			if (sharedCode.length) $('#menuSH').fadeIn(); else $('#menuSH').fadeOut();
+		};
+
+		function findServer(cm) {
+			var n = cm.getCursor().line;
+			while (n-- > 0) {
+				var line = cm.getLine(n).trimEnd().replace(/[\s]+/g, " ").split(" ");
+				if (line.length > 1 && line[0] == "//@SERVER" && line[1] !== "...") return line[1];
+			}
+			return dqweb.defaultServer;
+		};
+
+		function visitComps(layout, fn, x) {
+			if (layout.type == 'component') fn(x, layout); else for (var l of layout.content) visitComps(l, fn, x); return x;
 		}
-		fr.readAsText(f);
-	}
-}
 
-function migrateCode(code) {return code.replace('\t','    ').split('\n').map(function(l){return l.startsWith('//@HOST ') ? ('//@SERVER '+l.substring(8)): l;}).join('\n');}
-
-function findServer(cm) { 
-	var n = cm.getCursor().line;
-	var res = ["",""];  // server, proxy
-	while (n-- >0) {
-		var line = cm.getLine(n).trimEnd().replace(/[\s]+/g," ").split(" ");
-		if (res[0].length>0  && res[1].length==0 && line.length>1 && line[0]=="//@PROXY"){res[1] = line[1]; return res;};
-		if (res[0].length==0 && line.length>1 && line[0]=="//@SERVER" && line[1]!=="...") res[0] = line[1];
-	}
-	if(res[0].length=0) res[0] = dqweb.defaultServer;
-	return res;
-};
-
-function setOutput(server,cm,url) {
-	var n = cm.getCursor().line; var name="";
-	while (n-- >0) {
-		var line = cm.getLine(n).trimEnd().replace(/[\s]+/g," ").split(" ");
-		if (line[0]=="//@OUTPUT") { name=line.slice(1).join(" ").trim(); break;}
-	}
-	outputServer[name] = server;
-	if (name.length>0) {
-		var outputId = "output_"+name;
-		if (!document.getElementById(outputId)) {
-			var outCont = outputContainer.parent
-			var placement = outCont.parent, ix=-1;
-			while (!(("contentItems" in placement)&&(-1!=(ix=placement.contentItems.indexOf(outCont)))))
-				placement = placement.parent;
-			if (ix!=-1)
-				placement.addChild({type: 'component', isClosable: true, componentName: 'output', componentState: {name:name, src:url}},ix+1);
-		} else {
-			outputIframe[name].src=url;
+		function exportableData() {
+			var lo = myLayout.toConfig();
+			var data = { layout: GoldenLayout.minifyConfig(lo), code: {} };
+			visitComps(lo, function (d, c) {
+				if (c.componentName == 'code') {
+					var id = 'dqweb.code' + c.componentState.index;
+					d.code[id] = { title: c.componentState.title, code: localStorage.getItem(id) };
+				}
+			}, data);
+			return data;
 		}
-	}
-	else
-		outputIframe[""].src=url;
-}
 
-function optionsAbove(cm) {
-	var ops = {}, i = cm.getCursor('from').line,l;
-	while (0<=--i && (l=cm.getLine(i)).startsWith("//@")) {
-		var ls = l.split(" ");
-		if (!(ls[0] in ops)) ops[ls[0]]=(ls.slice(1).join(" ")).trim();
-	}
-	return ops;
-}
+		function exportSession() {
+			var fn = window.prompt("File name", "dqweb." + (new Date().toISOString()).substring(0, 16).replace(/[-:]/g, ".").replace("T", "_"));
+			if (!fn.toLowerCase().endsWith(".json")) fn += ".json";
+			saveAs(new Blob([JSON.stringify(exportableData())], { type: "text/plain;charset=utf-8" }), fn);
+		}
 
-function createQuery(ops,code) {
-	code = applyMacros(code);
-	if ("//@TRAP" in ops) code='.Q.trp[value;"'+code.replace(/"/g,'\\"')+'";{enlist["error: ",x],"\n" vs .Q.sbt y}]';
-	return code;
-}
+		function importSession(a) {
+			var f = document.getElementById('inputFile').files[0];
+			if (f) {
+				var fr = new FileReader();
+				fr.onload = function () {
+					var session = JSON.parse(fr.result);
+					if (a) {
+						if (window.confirm("Are you OK with replacing your code/layout?")) {
+							visitComps(myLayout.toConfig(), function (x, c) {
+								if (c.componentName == 'code') localStorage.removeItem('dqweb.code' + c.componentState.index);
+							}, 0);
+						} else {
+							document.getElementById('importSession').close();
+							return 0;
+						}
+						localStorage.setItem('dqweb.layout', JSON.stringify(GoldenLayout.unminifyConfig(session.layout)));
+					}
+					for (var id in session.code) {
+						if (a)
+							localStorage.setItem(id, session.code[id].code);
+						else
+							sharedCode.unshift(session.code[id]);
+					}
+					localStorage.setItem('dqweb.shared', JSON.stringify(sharedCode));
+					window.location.reload();
+				}
+				fr.readAsText(f);
+			}
+		}
 
-function asStr(s) {return '"'+s.replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"';}
-function firstWord(s) {var ss=s.split(" ");return s.length?ss[0]:s;}
-function createQueryUrl(server,ops,code) {
-	if ("//@ONCE" in ops) server[0] = firstWord(ops["//@ONCE"]);
-	var s = server[0];
-	code = applyMacros(code);
-	if ("//@TRAP" in ops) code='.Q.trp[value;'+asStr(code)+';{enlist["error: ",x],"\n" vs .Q.sbt y}]';
-	if (server[1].length>0) {
-		code = ".dqweb.h["+asStr(s)+"]"+asStr(code);
-		s = server[1];
-	}
-	return "http://"+s+"/"+file(ops)+"?"+encodeURIComponent(code);
-}
+		function migrateCode(code) { return code.replace('\t', '    ').split('\n').map(function (l) { return l.startsWith('//@HOST ') ? ('//@SERVER ' + l.substring(8)) : l; }).join('\n'); }
 
-function scaneAllCodeFor(prefix,data,action) {
-	return visitComps(myLayout.toConfig(),function(x,y){
-		if (y.componentName=='code') {
-			for (var l of localStorage.getItem('dqweb.code'+y.componentState.index).split('\n')) {
-				if (l.startsWith(prefix)) {
-					var ls = l.substring(prefix.length).trim().split(" ");
-					if (ls.length) {
-						var k = ls[0]; var v = ls.slice(1).join(' ').trim();
-						action(x,k,v);
+		function findServer(cm) {
+			var n = cm.getCursor().line;
+			var res = ["", ""];  // server, proxy
+			while (n-- > 0) {
+				var line = cm.getLine(n).trimEnd().replace(/[\s]+/g, " ").split(" ");
+				if (res[0].length > 0 && res[1].length == 0 && line.length > 1 && line[0] == "//@PROXY") { res[1] = line[1]; return res; };
+				if (res[0].length == 0 && line.length > 1 && line[0] == "//@SERVER" && line[1] !== "...") res[0] = line[1];
+			}
+			if (res[0].length = 0) res[0] = dqweb.defaultServer;
+			return res;
+		};
+
+		function setOutput(server, cm, url) {
+			var n = cm.getCursor().line; var name = "";
+			while (n-- > 0) {
+				var line = cm.getLine(n).trimEnd().replace(/[\s]+/g, " ").split(" ");
+				if (line[0] == "//@OUTPUT") { name = line.slice(1).join(" ").trim(); break; }
+			}
+			outputServer[name] = server;
+			if (name.length > 0) {
+				var outputId = "output_" + name;
+				if (!document.getElementById(outputId)) {
+					var outCont = outputContainer.parent
+					var placement = outCont.parent, ix = -1;
+					while (!(("contentItems" in placement) && (-1 != (ix = placement.contentItems.indexOf(outCont)))))
+						placement = placement.parent;
+					if (ix != -1)
+						placement.addChild({ type: 'component', isClosable: true, componentName: 'output', componentState: { name: name, src: url } }, ix + 1);
+				} else {
+					outputIframe[name].src = url;
+				}
+			}
+			else
+				outputIframe[""].src = url;
+		}
+
+		function optionsAbove(cm) {
+			var ops = {}, i = cm.getCursor('from').line, l;
+			while (0 <= --i && (l = cm.getLine(i)).startsWith("//@")) {
+				var ls = l.split(" ");
+				if (!(ls[0] in ops)) ops[ls[0]] = (ls.slice(1).join(" ")).trim();
+			}
+			return ops;
+		}
+
+		function createQuery(ops, code) {
+			code = applyMacros(code);
+			if ("//@TRAP" in ops) code = '.Q.trp[value;"' + code.replace(/"/g, '\\"') + '";{enlist["error: ",x],"\n" vs .Q.sbt y}]';
+			return code;
+		}
+
+		function asStr(s) { return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'; }
+		function firstWord(s) { var ss = s.split(" "); return s.length ? ss[0] : s; }
+		function createQueryUrl(server, ops, code) {
+			if ("//@ONCE" in ops) server[0] = firstWord(ops["//@ONCE"]);
+			var s = server[0];
+			code = applyMacros(code);
+			if ("//@TRAP" in ops) code = '.Q.trp[value;' + asStr(code) + ';{enlist["error: ",x],"\n" vs .Q.sbt y}]';
+			if (server[1].length > 0) {
+				code = ".dqweb.h[" + asStr(s) + "]" + asStr(code);
+				s = server[1];
+			}
+			return "http://" + s + "/" + file(ops) + "?" + encodeURIComponent(code);
+		}
+
+		function scaneAllCodeFor(prefix, data, action) {
+			return visitComps(myLayout.toConfig(), function (x, y) {
+				if (y.componentName == 'code') {
+					for (var l of localStorage.getItem('dqweb.code' + y.componentState.index).split('\n')) {
+						if (l.startsWith(prefix)) {
+							var ls = l.substring(prefix.length).trim().split(" ");
+							if (ls.length) {
+								var k = ls[0]; var v = ls.slice(1).join(' ').trim();
+								action(x, k, v);
+							}
+						}
 					}
 				}
-			}
+			}, data);
 		}
-	},data);
-}
 
-function applyMacros(code) {
-	mac = scaneAllCodeFor("//@MAC ",{},function(d,k,v) {if (k in d) window.alert("Duplicate definition for "+k+" : "+v); else if (v.length) d[k] = v;});
-	var updated = false;
-	do {
-		updated = false;
-		for (var name of Object.keys(mac).sort().reverse())
-			while (code.includes("!!"+name)) { code = code.replace("!!"+name,mac[name]);updated=true;}
-	} while (updated);
-	return code;
-}
+		function applyMacros(code) {
+			mac = scaneAllCodeFor("//@MAC ", {}, function (d, k, v) { if (k in d) window.alert("Duplicate definition for " + k + " : " + v); else if (v.length) d[k] = v; });
+			var updated = false;
+			do {
+				updated = false;
+				for (var name of Object.keys(mac).sort().reverse())
+					while (code.includes("!!" + name)) { code = code.replace("!!" + name, mac[name]); updated = true; }
+			} while (updated);
+			return code;
+		}
 
-function consent(ops) {return (!("//@WARN" in ops)) || window.confirm("Warning: "+ops["//@WARN"]+"\nDo you want to continue?");}
-function file(ops) {return (ops["//@FILE"]||"").split(" ")[0];}
+		function consent(ops) { return (!("//@WARN" in ops)) || window.confirm("Warning: " + ops["//@WARN"] + "\nDo you want to continue?"); }
+		function file(ops) { return (ops["//@FILE"] || "").split(" ")[0]; }
 
-function ctrlEnter(cm) {
-	var cur = cm.getCursor();
-	var line = cm.getLine(cur.line).trimEnd();
-	var code = cm.getSelection().trimEnd();
-	if (code.length==0) code = line;
-	var oneline = line == code;
-	if (oneline && (line=="//@SERVER" || line=="//@ONCE") /*&& cm.getLine(cur.line).endsWith(" ")*/) {
-		var servers = scaneAllCodeFor("//@SERVER ",{},function(srvs,s,c){
-			if (s.length&&((srvs[s]==undefined)||(srvs[s].length<c.length))) srvs[s]=c;
-		});
-		var hints = [];var maxsl = 0;for (const k in servers) maxsl = Math.max(maxsl,k.length);
-		for (const [k,c] of Object.entries(servers)) hints.push((k+" ".repeat(2+maxsl-k.length)+c).trimEnd());hints.sort();
-		cm.showHint({hint:function(cm) {
-			var prefix = cm.getLine(cm.getCursor().line).slice(10).trim();
-			return{list:hints.filter(function(s){return s.startsWith(prefix);}),from:{line:cur.line,ch:10},to:{line:cur.line,ch:cm.getLine(cur.line).length}};
-		}});
-	} else if (oneline && line.startsWith("//@TITLE ")) {
-		var title = line.substring(8).trim();
-		cm.glContainer.extendState({title:title});
-		cm.glContainer.setTitle(title);
-		saveLayout();
-	} else if (oneline && line.startsWith("//@URL ")) {
-		console.log(line);
-		var url = line.substring(7).trim().split(' ');
-		if (url.length>0) setOutput(url[0],cm,url[0]);
-	} else {
-		var server=findServer(cm);var ops=optionsAbove(cm);
-		var url=createQueryUrl(server,ops,code);
-		if (consent(ops))
-			setOutput(server[0],cm,url);
-	}
-};
+		function ctrlEnter(cm) {
+			var cur = cm.getCursor();
+			var line = cm.getLine(cur.line).trimEnd();
+			var code = cm.getSelection().trimEnd();
+			if (code.length == 0) code = line;
+			var oneline = line == code;
+			if (oneline && (line == "//@SERVER" || line == "//@ONCE") /*&& cm.getLine(cur.line).endsWith(" ")*/) {
+				var servers = scaneAllCodeFor("//@SERVER ", {}, function (srvs, s, c) {
+					if (s.length && ((srvs[s] == undefined) || (srvs[s].length < c.length))) srvs[s] = c;
+				});
+				var hints = []; var maxsl = 0; for (const k in servers) maxsl = Math.max(maxsl, k.length);
+				for (const [k, c] of Object.entries(servers)) hints.push((k + " ".repeat(2 + maxsl - k.length) + c).trimEnd()); hints.sort();
+				cm.showHint({
+					hint: function (cm) {
+						var prefix = cm.getLine(cm.getCursor().line).slice(10).trim();
+						return { list: hints.filter(function (s) { return s.startsWith(prefix); }), from: { line: cur.line, ch: 10 }, to: { line: cur.line, ch: cm.getLine(cur.line).length } };
+					}
+				});
+			} else if (oneline && line.startsWith("//@TITLE ")) {
+				var title = line.substring(8).trim();
+				cm.glContainer.extendState({ title: title });
+				cm.glContainer.setTitle(title);
+				saveLayout();
+			} else if (oneline && line.startsWith("//@URL ")) {
+				console.log(line);
+				var url = line.substring(7).trim().split(' ');
+				if (url.length > 0) setOutput(url[0], cm, url[0]);
+			} else {
+				var server = findServer(cm); var ops = optionsAbove(cm);
+				var url = createQueryUrl(server, ops, code);
+				if (consent(ops))
+					setOutput(server[0], cm, url);
+			}
+		};
 
-function altEnter(cm) {
-	var cur = cm.getCursor();
-	ws = cm.lineInfo(cur.line).widgets;if (ws!==undefined && ws!=null) for (w of ws) w.clear();
-	var line = cm.getLine(cur.line).trimEnd();
-	var code = cm.getSelection().trimEnd();
-	if (code.length==0) code = line;
-	var server=findServer(cm);var ops=optionsAbove(cm);
-	var url=createQueryUrl(server,ops,code);
-	if (consent(ops))
-	{
-		var whandle = cm.addLineWidget(cur.line,$('<div>⏳</div>')[0]);
-		var ifr = document.createElement('iframe');
-		ifr.addEventListener('load',function(){
-			var line = cm.getLineNumber(whandle.line);
-			whandle.clear();
-			if (ifr.contentDocument) {
-				var res = ifr.contentDocument.body.innerText.trim().split('\n').map(function(x){return "/"+x}).join('\n');
-				ifr.remove();
-				if (line) {
-					var ll = cm.getLine(line).length;
-					cm.replaceRange('\n'+res,{line:line,ch:ll},{line:line,ch:ll});
+		function altEnter(cm) {
+			var cur = cm.getCursor();
+			ws = cm.lineInfo(cur.line).widgets; if (ws !== undefined && ws != null) for (w of ws) w.clear();
+			var line = cm.getLine(cur.line).trimEnd();
+			var code = cm.getSelection().trimEnd();
+			if (code.length == 0) code = line;
+			var server = findServer(cm); var ops = optionsAbove(cm);
+			var url = createQueryUrl(server, ops, code);
+			if (consent(ops)) {
+				var whandle = cm.addLineWidget(cur.line, $('<div>⏳</div>')[0]);
+				var ifr = document.createElement('iframe');
+				ifr.addEventListener('load', function () {
+					var line = cm.getLineNumber(whandle.line);
+					whandle.clear();
+					if (ifr.contentDocument) {
+						var res = ifr.contentDocument.body.innerText.trim().split('\n').map(function (x) { return "/" + x }).join('\n');
+						ifr.remove();
+						if (line) {
+							var ll = cm.getLine(line).length;
+							cm.replaceRange('\n' + res, { line: line, ch: ll }, { line: line, ch: ll });
+						}
+						cm.setCursor(cm.getCursor(), { scroll: true });
+					} else
+						window.alert("Alt+Enter only works if you host DQWEB from your target q server.");
+				});
+				ifr.src = url;
+				document.getElementById('loaders').append(ifr);
+				if (cm.lastLine() == cur.line) {
+					var lineend = { line: cur.line, ch: cm.getLine(cur.line).length };
+					cm.replaceRange('\n', lineend, lineend);
 				}
-				cm.setCursor(cm.getCursor(),{scroll:true});
-			} else 
-				window.alert("Alt+Enter only works if you host DQWEB from your target q server.");
+				cm.setCursor(cur.line + 1, 0, { scroll: true });
+			}
+		};
+
+		function shareCode(cm) {
+			var t = cm.glContainer.getState().title, c = cm.getValue();
+			var dummy = document.createElement("textarea");
+			document.body.appendChild(dummy);
+			dummy.value = dqweb.shareUrl + "#" + LZString.compressToEncodedURIComponent(JSON.stringify({ title: t, code: c }));
+			dummy.select();
+			document.execCommand("copy");
+			document.body.removeChild(dummy);
+			window.alert("Share link is copied to the clipboard!");
+		};
+
+		myLayout.registerComponent('code', function (container, state) {
+			var newData = {};
+			if (state.index == -1 && closedCode.length > 0) {
+				newData = closedCode[0]; newData.type = -1;
+			}
+			if (state.index == -2 && sharedCode.length > 0) {
+				newData = sharedCode[0]; newData.type = -2;
+			}
+			if ("code" in state) {
+				newData.code = state.code;
+				delete state['code'];
+			}
+			if (state.index > 0) {
+				maxIndex = Math.max(maxIndex, state.index);
+			} else {
+				state.index = ++maxIndex;
+			};
+			if (!state.title) {
+				state.title = newData.title || "Code " + state.index
+			};
+			container.setState(state);
+			container.setTitle(state.title);
+			var id = "dqweb.code" + state.index;
+			var c = migrateCode(newData.code || localStorage.getItem(id) || dqweb.defaultCode);
+			localStorage.setItem(id, c);
+			var initFn = function () {
+				var editor = CodeMirror(container.getElement()[0], {
+					value: c, lineNumbers: true, mode: "q", matchBrackets: true, styleActiveLine: true, theme: "eclipse",
+				});
+				editor.setSize("100%", "100%");
+				editor.on("change", async function (x, y) { localStorage.setItem(id, x.getValue()); });
+				editor.setOption("extraKeys", {
+					'Ctrl-Enter': ctrlEnter, 'Alt-Enter': altEnter, 'Ctrl-Space': "autocomplete", "Ctrl-S": shareCode,
+					Tab: function (cm) {
+						var spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
+						cm.replaceSelection(spaces);
+					}
+				});
+				editor.glContainer = container;
+			};
+			//this init (hack?) works for startup init and drag too
+			container.on('resize', function () {
+				initFn(); container.unbind('resize');
+				if ('type' in newData) {
+					if (newData.type == -1) { closedCode.shift(); updateClosed(); }
+					if (newData.type == -2) { sharedCode.shift(); updateShared(); }
+				}
+			});
+			//delete code from storage when closed
+			container.on('destroy', function () {
+				closedCode.unshift({ code: localStorage.getItem(id), title: container.getState().title });
+				localStorage.removeItem(id);
+				updateClosed();
+			});
 		});
-		ifr.src=url;
-		document.getElementById('loaders').append(ifr);
-		if (cm.lastLine()==cur.line) {
-			var lineend = {line:cur.line,ch:cm.getLine(cur.line).length};
-			cm.replaceRange('\n',lineend,lineend);
+
+		myLayout.registerComponent('help', function (container, componentState) {
+			container.getElement()[0].style.overflow = "auto";
+			container.getElement()[0].append(document.getElementById('helpText').content.cloneNode(true));
+			container.on('resize', function () {
+				$("#default_server").text(function () { return dqweb.defaultServer; });
+				$("#share_url").text(function () { return dqweb.shareUrl; });
+				$("#trash_size").text(function () { return "" + dqweb.trashSize; });
+			});
+		});
+
+		var outputContainer, outputIframe = {}, outputServer = {};
+		myLayout.registerComponent('output', function (container, componentState) {
+			var name = componentState.name || "";
+			var src = componentState.src || ""; delete componentState["src"];
+			container.setState(componentState);
+			if (name == "") outputContainer = container;
+			var outputId = "output" + (name == "" ? "" : "_" + name);
+			var ifr = $('<iframe id="' + outputId + '" src="' + src + '" width="100%" height="100%"/>')[0];
+			outputIframe[name] = ifr;
+			container.getElement()[0].append(ifr);
+			container.setTitle("Output " + name);
+			ifr.addEventListener('load', function () {
+				var srv = outputServer[name] || "Disconnected";
+				container.setTitle("Output " + name + " (" + srv + ")");
+				container.parent.parent.setActiveContentItem(container.parent);
+			});
+		});
+
+		myLayout.inited = false;
+		async function saveLayout() { if (myLayout.inited) localStorage.setItem('dqweb.layout', JSON.stringify(myLayout.toConfig())); };
+		myLayout.on('initialised', function () { myLayout.inited = true; });
+		myLayout.on('stateChanged', saveLayout);
+		CodeMirror.registerHelper("hintWords", "q", ("//@SERVER,//@TITLE,//@WARN,//@FILE,//@OUTPUT,//@URL,//@TRAP,//@ONCE,//@PROXY," + dqweb.qwords).split(','));
+		$(window).resize(function () { myLayout.updateSize($(window).width() - 9, $(window).height() - 34); });
+		myLayout.createDragSource(document.getElementById("new"), { type: 'component', componentName: 'code', componentState: { index: 0 } });
+		myLayout.createDragSource(document.getElementById("closed"), { type: 'component', componentName: 'code', componentState: { index: -1 } });
+		myLayout.createDragSource(document.getElementById("shared"), { type: 'component', componentName: 'code', componentState: { index: -2 } });
+		myLayout.createDragSource(document.getElementById("demo"), { type: 'component', componentName: 'code', title: "Demo", componentState: { title: 'Demo', code: dqweb.demoCode } });
+		myLayout.createDragSource(document.getElementById("help"), { type: 'component', componentName: 'help', title: "Help", componentState: {} });
+
+		var alreadyOpen = false;
+		window.addEventListener('load', function () {
+			if (location.hash.length > 1) {
+				sharedCode.unshift(JSON.parse(LZString.decompressFromEncodedURIComponent(location.hash.substring(1))));
+				location.hash = "";
+			}
+			updateClosed(); updateShared();
+			var checkOther = function () { alreadyOpen = true; };
+			window.addEventListener('storage', checkOther);
+
+			setTimeout(function () {
+				window.removeEventListener('storage', checkOther);
+				if (alreadyOpen) {
+					$("#pleaseClose").fadeIn();
+				} else {
+					$("#menubar").show(); myLayout.init();
+					setInterval(function () {
+						localStorage.setItem("dqweb.now", Date.now().toString());
+					}, 100);
+					setInterval(function () {
+						sharedCode = JSON.parse(localStorage.getItem('dqweb.shared')); updateShared();
+					}, 1000);
+				}
+			}, 1000);
+		});
+
+		function toggleDarkMode() {
+			document.body.classList.toggle('dark-mode');
+			localStorage.setItem('dqweb.theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
 		}
-		cm.setCursor(cur.line+1,0,{scroll:true});
-	}
-};
 
-function shareCode(cm) {
-	var t = cm.glContainer.getState().title,c = cm.getValue();
-	var dummy = document.createElement("textarea");
-    document.body.appendChild(dummy);
-    dummy.value = dqweb.shareUrl+"#"+LZString.compressToEncodedURIComponent(JSON.stringify({title:t,code:c}));
-    dummy.select();
-    document.execCommand("copy");
-    document.body.removeChild(dummy);	
-	window.alert("Share link is copied to the clipboard!");
-};
-
-myLayout.registerComponent('code', function( container, state ) {
-	var newData = {};
-	if (state.index==-1 && closedCode.length>0) {
-		newData = closedCode[0]; newData.type=-1;
-	}
-	if (state.index==-2 && sharedCode.length>0) {
-		newData = sharedCode[0]; newData.type=-2;
-	}
-	if ("code" in state) {
-		newData.code = state.code;
-		delete state['code'];
-	}	
-	if (state.index>0) {
-		maxIndex = Math.max(maxIndex,state.index);
-	} else {
-		state.index=++maxIndex;
-	};
-	if (!state.title) {
-		state.title= newData.title || "Code "+state.index
-	};
-	container.setState(state);
-	container.setTitle(state.title);
-	var id = "dqweb.code"+state.index;
-	var c = migrateCode(newData.code || localStorage.getItem(id) || dqweb.defaultCode);
-	localStorage.setItem(id,c);
-	var initFn = function(){
-		var editor = CodeMirror(container.getElement()[0], {
-			value:c, lineNumbers: true, mode: "q", matchBrackets: true, styleActiveLine: true, theme: "eclipse",
-		});
-		editor.setSize("100%","100%");
-		editor.on("change",async function(x,y){localStorage.setItem(id,x.getValue());});
-		editor.setOption("extraKeys",{'Ctrl-Enter':ctrlEnter,'Alt-Enter':altEnter,'Ctrl-Space' : "autocomplete","Ctrl-S":shareCode,
-			Tab: function(cm) {
-				var spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
-				cm.replaceSelection(spaces);
+		window.addEventListener('DOMContentLoaded', () => {
+			const theme = localStorage.getItem('dqweb.theme') || 'dark';
+			const checkbox = document.getElementById('checkbox');
+			if (theme === 'dark') {
+				document.body.classList.add('dark-mode');
+				if (checkbox) checkbox.checked = true;
+			} else {
+				document.body.classList.remove('dark-mode');
+				if (checkbox) checkbox.checked = false;
 			}
 		});
-		editor.glContainer = container;
-	};
-	//this init (hack?) works for startup init and drag too
-	container.on('resize',function() {
-		initFn();container.unbind('resize');
-		if ('type' in newData) {
-			if (newData.type==-1) {closedCode.shift();updateClosed();}
-			if (newData.type==-2) {sharedCode.shift();updateShared();}
-		}
-	});
-	//delete code from storage when closed
-	container.on('destroy',function() {
-		closedCode.unshift({code:localStorage.getItem(id),title:container.getState().title});
-		localStorage.removeItem(id);
-		updateClosed();
-	});
-});
 
-myLayout.registerComponent('help', function( container, componentState ) {
-	container.getElement()[0].style.overflow="auto";
-    container.getElement()[0].append(document.getElementById('helpText').content.cloneNode(true));
-	container.on('resize',function(){
-		$("#default_server").text(function(){return dqweb.defaultServer;});
-		$("#share_url").text(function(){return dqweb.shareUrl;});
-		$("#trash_size").text(function(){return ""+dqweb.trashSize;});
-	});
-});
-
-var outputContainer, outputIframe = {}, outputServer = {};
-myLayout.registerComponent('output', function( container, componentState ){
-	var name = componentState.name || "";
-	var src = componentState.src || ""; delete componentState["src"];
-	container.setState(componentState);
-	if (name=="") outputContainer=container;
-	var outputId = "output"+(name==""?"":"_"+name);
-	var ifr = $('<iframe id="'+outputId+'" src="'+src+'" width="100%" height="100%"/>')[0];
-	outputIframe[name] = ifr;
-    container.getElement()[0].append(ifr);
-	container.setTitle("Output "+name);
-	ifr.addEventListener('load',function(){
-		container.setTitle("Output "+name+" ("+outputServer[name]+")");
-		container.parent.parent.setActiveContentItem(container.parent);
-	});
-});
-
-myLayout.inited = false;
-async function saveLayout() {if (myLayout.inited) localStorage.setItem('dqweb.layout',JSON.stringify(myLayout.toConfig()));};
-myLayout.on('initialised',function(){myLayout.inited = true;});
-myLayout.on('stateChanged', saveLayout);
-CodeMirror.registerHelper("hintWords","q",("//@SERVER,//@TITLE,//@WARN,//@FILE,//@OUTPUT,//@URL,//@TRAP,//@ONCE,//@PROXY,"+dqweb.qwords).split(','));
-$(window).resize(function () {myLayout.updateSize($(window).width()-9, $(window).height()-34);});
-myLayout.createDragSource(document.getElementById("new"),   {type: 'component', componentName: 'code', componentState: { index:  0}});
-myLayout.createDragSource(document.getElementById("closed"),{type: 'component', componentName: 'code', componentState: { index: -1}});
-myLayout.createDragSource(document.getElementById("shared"),{type: 'component', componentName: 'code', componentState: { index: -2}});
-myLayout.createDragSource(document.getElementById("demo"),  {type: 'component', componentName: 'code', title:"Demo", componentState: {title:'Demo',code:dqweb.demoCode}});
-myLayout.createDragSource(document.getElementById("help"),  {type: 'component', componentName: 'help', title:"Help", componentState: {}});
-
-var alreadyOpen = false;
-window.addEventListener('load',function(){
-	if (location.hash.length>1) {
-		sharedCode.unshift(JSON.parse(LZString.decompressFromEncodedURIComponent(location.hash.substring(1))));
-		location.hash="";
-	}
-	updateClosed();updateShared();
-	var checkOther = function(){alreadyOpen=true;};
-	window.addEventListener('storage',checkOther);
-	
-	setTimeout(function(){
-		window.removeEventListener('storage',checkOther);
-		if (alreadyOpen) {
-			$("#pleaseClose").fadeIn();
-		} else {
-			$("#menubar").show();myLayout.init();
-			setInterval(function(){
-				localStorage.setItem("dqweb.now",Date.now().toString());
-			},100);
-			setInterval(function(){
-				sharedCode = JSON.parse(localStorage.getItem('dqweb.shared'));updateShared();
-			},1000);
-		}
-	},1000);
-});
-	
-document.title = "DQWEB v0.7 ("+document.location.host+")";
-</script>
+		document.title = "DQWEB v0.8 (" + document.location.host + ")";
+	</script>
 </body>

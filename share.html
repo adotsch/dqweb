@@ -1,48 +1,179 @@
-<title>DQWEB SHARED CODE</title>
-<script type="text/javascript" src="jq/jquery-1.11.1.min.js"></script>
-<dialog>
-<center>
-<form>
-<h2>Someone has shared code with you!</h2>
-<label>Your DQWEB instance:</label><input type="text" size=40 id="instance"></input> <input type="button" value="ADD SHARED CODE!" onclick="go()"/></input>
-<br/>
-<label>Auto redirect:</label><input type="checkbox" id="redirect"/>
-</form>
-<h1 id="countdown"></h1>
-</center>
-</dialog>
-<script>
-var instance, redirect, timer;
-window.addEventListener('load',function(){
-	$("dialog")[0].showModal();
-	instance = localStorage.getItem("dqweb.instance")||"https://adotsch.github.io/dqweb/";
-	redirect = localStorage.getItem("dqweb.redirect")||"false";
-	$("#instance")[0].value = instance;
-	$("#redirect")[0].checked = JSON.parse(redirect);
-	$("#instance")[0].oninput = function(){
-		instance=$("#instance")[0].value;
-		localStorage.setItem("dqweb.instance",instance);
-		stopCounting();
-	};
-	$("#redirect")[0].onchange = function(){
-		redirect=$("#redirect")[0].checked;
-		localStorage.setItem("dqweb.redirect",""+redirect);
-		stopCounting();
-	};
-	if (redirect=="true"){
-		$("#countdown")[0].innerText="5";
-		timer = setInterval(function(){
-			var c = $("#countdown")[0];
-			c.innerText=""+(JSON.parse(c.innerText)-1);
-			if(c.innerText=="0" && redirect) go();
-		},1000);
-	}
-});
-function stopCounting() {
-	clearTimeout(timer);
-	$("#countdown")[0].innerText="";
-}
-function go(){
-	window.location = instance+window.location.hash;
-}
-</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DQWEB | Shared Code</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="jq/jquery-1.11.1.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --radius-lg: 1rem;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 1.5rem;
+        }
+
+        p {
+            color: #64748b;
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #475569;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        input[type="button"] {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        input[type="button"]:hover {
+            background: var(--accent-hover);
+        }
+
+        #countdown {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-top: 1.5rem;
+            height: 4rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Shared Code</h2>
+        <p>Someone has shared kdb+/q code with you!</p>
+        
+        <div class="form-group">
+            <label for="instance">Your DQWEB instance URL</label>
+            <input type="text" id="instance" placeholder="https://adotsch.github.io/dqweb/">
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="redirect">
+            <label for="redirect">Auto-redirect next time</label>
+        </div>
+
+        <input type="button" value="ADD SHARED CODE" onclick="go()"/>
+
+        <div id="countdown"></div>
+    </div>
+
+    <script>
+        var instance, redirect, timer;
+        
+        window.addEventListener('load', function() {
+            instance = localStorage.getItem("dqweb.instance") || "https://adotsch.github.io/dqweb/";
+            redirect = localStorage.getItem("dqweb.redirect") || "false";
+            
+            $("#instance")[0].value = instance;
+            $("#redirect")[0].checked = JSON.parse(redirect);
+            
+            $("#instance")[0].oninput = function() {
+                instance = $("#instance")[0].value;
+                localStorage.setItem("dqweb.instance", instance);
+                stopCounting();
+            };
+            
+            $("#redirect")[0].onchange = function() {
+                redirect = $("#redirect")[0].checked;
+                localStorage.setItem("dqweb.redirect", "" + redirect);
+                stopCounting();
+            };
+            
+            if (redirect === "true") {
+                var count = 5;
+                $("#countdown")[0].innerText = count;
+                timer = setInterval(function() {
+                    count--;
+                    $("#countdown")[0].innerText = count;
+                    if (count === 0 && JSON.parse(localStorage.getItem("dqweb.redirect"))) go();
+                }, 1000);
+            }
+        });
+
+        function stopCounting() {
+            clearInterval(timer);
+            $("#countdown")[0].innerText = "";
+        };
+
+        function go() {
+            window.location = instance + window.location.hash;
+        };
+    </script>
+</body>
+</html>
